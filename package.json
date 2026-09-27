@@ -1,0 +1,18 @@
+{
+  "name": "shoplytics-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Group 7 discovery prototype with synthetic transaction data",
+  "scripts": {
+    "start": "node setup.mjs && node server.mjs",
+    "test": "node --test",
+    "setup": "node setup.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "pdfkit": "^0.20.2"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "year": 2026,
+  "source": {
+    "type": "user_supplied_image",
+    "file": "university-calendar-2026-source.jpg",
+    "receivedDate": "2026-09-22",
+    "yearBasis": "User described it as this year's university calendar; year not visible in crop",
+    "independentlyVerified": false
+  },
+  "dateConvention": "ISO date-only; inclusive endpoints; single-date events repeat start and end",
+  "unclassifiedDates": "Do not infer teaching, recess or assessment status for dates not covered by a corresponding period",
+  "periods": [
+    {"id":"term-1","label":"First term","type":"teaching_term","start":"2026-02-09","end":"2026-03-27"},
+    {"id":"semester-1-recess","label":"Mid Semester 1 recess","type":"recess","start":"2026-03-28","end":"2026-04-06"},
+    {"id":"term-2","label":"Second term","type":"teaching_term","start":"2026-04-07","end":"2026-05-15"},
+    {"id":"june-a2","label":"June A2 assessment period","type":"assessment","start":"2026-05-18","end":"2026-06-10"},
+    {"id":"june-a3","label":"June A3 assessment period","type":"assessment","start":"2026-06-11","end":"2026-06-27"},
+    {"id":"mid-year-recess","label":"Mid-year recess","type":"recess","start":"2026-06-28","end":"2026-07-19"},
+    {"id":"term-3","label":"Third term","type":"teaching_term","start":"2026-07-20","end":"2026-09-04"},
+    {"id":"semester-2-recess","label":"Mid Semester 2 recess","type":"recess","start":"2026-09-05","end":"2026-09-13"},
+    {"id":"term-4","label":"Fourth term","type":"teaching_term","start":"2026-09-14","end":"2026-10-23"},
+    {"id":"november-a2","label":"November A2 assessment period","type":"assessment","start":"2026-10-26","end":"2026-11-18"},
+    {"id":"november-a3","label":"November A3 assessment period","type":"assessment","start":"2026-11-19","end":"2026-12-05"}
+  ],
+  "events": [
+    {"id":"university-reopens","label":"University reopens","start":"2026-01-05","end":"2026-01-05"},
+    {"id":"graduation","label":"Graduation ceremonies","start":"2026-03-23","end":"2026-03-27"},
+    {"id":"semester-1-ends","label":"First semester ends","start":"2026-06-27","end":"2026-06-27"},
+    {"id":"semester-2-ends","label":"Second semester ends","start":"2026-12-11","end":"2026-12-11"}
+  ]
+}
