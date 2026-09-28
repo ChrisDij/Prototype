@@ -1,95 +1,75 @@
-# Shoplytics working prototype
+# Shop-A-Lytics
 
-Updated 28 September 2026. A local web application for Group 7, with five years of synthetic transaction data, stored accounts, 2021–2026 calendar context (2021–2023 estimated), charts, PDF reports and saved feedback. See [remaining work](REMAINING-WORK.md) for what is unfinished or requires approval.
+Local Group 7 application, updated 28 September 2026 to follow the supplied MVP wireframes and user flow. Uses invented transactions, not actual student or retailer activity. See [implementation status and remaining work](REMAINING-WORK.md) for explicit data-dependent limitations.
 
-## Five-year history and calendars
+## Run
 
-Sample records cover **28 September 2021 through 28 September 2026**, inclusive. This is a fixed, reproducible demonstration window, not a live feed. Choose **Last 5 years** for a monthly overview, **Sample year** for an individual year, or enter custom dates. The 2021 and 2026 year selections cover only the available portions of those years. Chart figures and PDF exports use the selected range.
-
-The University period menu includes the supplied 2024, 2025 and 2026 calendars, with year-qualified names. Calendar dates add context; they do not supply actual transaction records or prove causes of spending changes. 2021–2023 periods are explicitly estimated from the three supplied calendars. The method anchors first term to February's second Monday (common to all three sources), then uses the median start/end offsets from that anchor for each term, recess and assessment period. This preserves typical weekdays and approximate durations, not actual historical schedules. Pandemic disruptions and year-specific changes are not reconstructed. No graduation, reopening or semester-end events are invented. Estimates are labelled in filters, dashboard context and PDF reports; gaps remain unclassified. Estimated periods carry `estimated: true` and `eligibleForAnomalyBaseline: false` so future anomaly detection can exclude them as reliable calendar baselines.
-
-On the next startup, the original version-1 synthetic database is extended automatically. Existing June–August 2026 transactions, passwords, sessions and feedback are retained. New installations receive the complete five-year fixture. The migration is transactional and runs once.
-
-Calendar sources: 2024 was transcribed from team-supplied `IMG_8845.jpg` (Registrar, 20 June 2023); 2025 from `IMG_8844.jpg` (Registrar, 3 June 2024). The previously supplied 2026 calendar is retained. Structured dates and provenance are bundled in `data/calendar-2024.json`, `data/calendar-2025.json` and `data/calendar-2026.json`.
-
-## Start the application
-
-Requires Node.js 22.13 or newer; tested with Node 24.2.0. Uses built-in SQLite and PDFKit. Node may display an experimental SQLite warning.
-
-From this folder:
+Requires Node.js 22.13+ (tested with 24.2.0), built-in SQLite and PDFKit.
 
 ```sh
 npm ci
 npm start
 ```
 
-Open http://127.0.0.1:4317. The server binds only to the local computer. `SHOPLYTICS_PORT` can select a different port.
+Open http://127.0.0.1:4317. `SHOPLYTICS_PORT` overrides the port. The server is intentionally local-only. An experimental SQLite warning is normal on some Node versions.
 
-First startup creates `.local/shoplytics.sqlite`, loads synthetic data and provisions two accounts with randomly generated passwords. Open `.local/accounts.txt` to get the manager and reporting credentials. Subsequent starts preserve accounts, data, sessions and feedback. Do not commit or share `.local`; it is ignored by Git. Application routes do not serve that directory.
+First startup provisions manager and reporting accounts with random passwords in `.local/accounts.txt`. The database, credentials, sessions and feedback are private in `.local/` and must not be committed. Existing users automatically become owner/member users of Demo retailer without changing their credentials or transaction records. The migration supports populated legacy databases and repeated startups.
 
-`npm run setup` performs the same initialisation without starting the server. `npm test` runs analytical, persistence, account, permission, calendar and export checks. Test databases are isolated temporary files.
+`npm run setup` initialises without starting the server. `npm test` runs isolated analytical, migration, permission, privacy, calendar and PDF tests. Integration tests need permission to bind a temporary localhost port.
 
-## What is implemented
+## User flows
 
-- Username/password login using provisioned accounts, salted scrypt password hashes, one-hour sessions, logout and a five-failed-attempts-per-15-minutes account limit.
-- Persistent SQLite storage for source data, application users, hashed session tokens, feedback and basic audit events.
-- Primary and reporting access rules in `permissions.mjs`, enforced by the server.
-- Summary counts, total recorded values, weighted average values and preceding-period comparisons.
-- Date filtering; daily, Monday-based weekly and calendar-month grouping; line and column charts; accessible value tables; metric drill-down for primary users.
-- The supplied 2024–2026 university calendars, with selectable periods, overlapping event annotations and explicit unclassified dates.
-- Downloadable graphical PDF reports reflecting the applied dates, grouping, chart and permitted metric. Reports include summary values, coverage and calendar context.
-- Feedback submission and the signed-in user's own feedback history, saved across restarts. Feedback is not emailed; a team-wide review workflow remains pending.
-- Missing-coverage and empty-data states, synthetic-data labels and responsive layouts.
+- Log in using an existing demo username or an account email. Create a business account to become its owner; the new business has no connected locations or data.
+- Owners can add members on Team, generate temporary passwords, and remove member access. Share temporary credentials privately; email is not sent. A member must change the temporary password before accessing data. Password minimum is 12 characters, retaining the existing stronger policy rather than the wireframe's placeholder 8.
+- Both roles can view the dashboard, search their own locations, drill down month/week/day, switch line/bar charts, compare the preceding equal-length period, export a PDF and submit feedback.
+- Owners see the alerts list and explanations and can manage their own team. Members cannot access these endpoints. Neither role can edit source transactions or view student identities.
+- Export offers the current view or a dashboard summary for the selected dates. Filters, privacy suppression, estimated-calendar qualifications and synthetic-data disclosures apply to both.
+- Feedback is stored with one of two categories (Insights or Usability) and the current screen. `/api/feedback` returns only the caller's submissions. No notification email is sent.
 
-## Proposed role boundaries
+## Five-year history and calendars
 
-| Capability | Primary account | Reporting account |
-| --- | --- | --- |
-| Summary figures and transaction-activity chart/table | Yes | Yes |
-| Date/calendar selection and chart/grouping options | Yes | Yes |
-| Daily/grouped spending and average-value detail | Yes | No |
-| PDF export | Any permitted metric | Summary figures plus transaction activity |
-| Submit feedback and see own submissions | Yes | Yes |
-| View another user's feedback or edit shared source data | No | No |
+The fixed demonstration window is 28 September 2021 through 28 September 2026, inclusive. **All 5 years** opens a monthly overview. Custom date fields and the year-qualified calendar-period menu support narrower selections. This is not a live feed.
 
-These are implementation proposals awaiting client/lecturer confirmation. Client access to all dashboard features does not grant internal administration or unrestricted source data. Reporting responses omit detailed daily/grouped monetary values rather than merely hiding their controls.
+The team-supplied 2024–2026 calendars are retained in `data/calendar-YYYY.json`, including source provenance. 2024 came from `IMG_8845.jpg` (Registrar, 20 June 2023), 2025 from `IMG_8844.jpg` (Registrar, 3 June 2024), and 2026 from the previously supplied calendar.
 
-## Data model and assumptions
+2021–2023 periods are explicitly estimated. The method anchors first term to February's second Monday, then uses median start/end offsets from the three supplied calendars. This approximates weekday patterns and durations, not verified historical schedules; pandemic disruptions are not reconstructed. No graduation, reopening or semester-end events are invented. Estimates remain labelled in filters, context and reports, and are excluded from anomaly baselines. Unlisted dates remain unclassified.
 
-SQLite implements the prescribed `Student`, `Vendor_Type`, `Vendor` and `Transaction` entities with their named fields, primary keys and foreign keys. Dates/timestamps use ISO text. The ERD's GPS point is represented as a nullable text field pending confirmation of the supplied point encoding. `value` and `discount` are numeric fields; calculations convert the seeded currency values to integer cents.
+## Calculations, alerts and privacy
 
-The seed creates invented student identifiers with personal fields left null, four visibly synthetic vendors, one placeholder vendor type and transactions across the five-year sample window. No real student information is present. Discount and vendor location fields remain null; no official category list or discount interpretation is invented. The seed's `value` means recorded monetary amount only, not a confirmed before/after-discount amount.
+Date endpoints are inclusive. All money calculations use integer ZAR cents. Group averages are total value divided by transaction count, not averages of averages. Weeks start Monday; partial groups are labelled. Dates outside source coverage are unknown, not zero. Preceding-period comparisons require full coverage of both periods and privacy eligibility.
 
-Application users are separate from source students and vendors. Additional tables hold dataset coverage, accounts, sessions, feedback, login attempts and audit events. The schema is in `database.mjs`.
+Server-side aggregates with fewer than **5 transactions** return null measures with `hidden: true`. An additional bucket is hidden when a partition has only one hidden bucket, limiting simple subtraction within that partition. Hidden values never enter chart values or PDF rows. This does not guarantee protection against arbitrary cross-query differencing and is not suitable for real student data without an agreed privacy model and review.
 
-Current ingestion is a synthetic seed, not an importer for arbitrary official files. Dataset coverage is stored explicitly; it is not inferred from a lack of transactions. Timestamp handling in the fixture is UTC. Agree the actual source time zone before import. Calendar data is bundled in `data/calendar-YYYY.json` for reproducible setup. 2021–2023 use labelled estimates; other unsupported years remain unclassified.
+Count and average-value flags compare a location/day against up to eight prior matching weekdays with the same calendar-period and event context. At least four eligible baseline days, each with at least five transactions, are required. A flag must exceed both 50% deviation and two baseline standard deviations. The day under review is never in its own baseline. Missing/estimated context and insufficient eligible history result in no assessment, not a claim of normality. Flags remain in all aggregates and do not establish fraud or cause.
 
-## Calculation and report behaviour
+## Data-dependent limitations
 
-Date selections include both endpoints. Presets end at the latest sample date. Missing coverage is unknown, not zero. A weekly/monthly value includes only selected and covered days; partial buckets are labelled in the chart table and explained in reports. A grouped average is total value divided by transaction count, not an unweighted average of daily averages.
+Discounts are null, addresses/GPS are absent, and seeded timestamps are noon placeholders. Discount measures, maps, hourly charts and discount/hourly-concentration alerts explicitly say unavailable. They are not fabricated. Account recovery email and payment are not connected. The tagline uses neutral BoschCard wording rather than asserting an unverified premium-service relationship.
 
-The preceding comparison uses the same number of days and is available only if both periods are fully covered. Reports reflect selected values and charts; preceding-period percentage changes are not currently included in the PDF layout. Calendar annotations do not establish that university events caused changes in spending.
-
-## Useful checks in the browser
-
-1. Sign in with the manager account, choose Last 5 years and switch Chart to Columns. Select an individual sample year or university period to explore further.
-2. Choose Mid-year recess and inspect the dates, calendar context and grouped figures.
-3. Open an average-value detail and download its PDF.
-4. Choose dates outside sample coverage and check that missing data is not shown as a genuine zero.
-5. Submit a clearly marked test feedback message; sign out and back in to see it preserved.
-6. Sign in as reporting and verify that only permitted summary/transaction views and reports are available.
-
-## Application files
+## Main files
 
 | File | Responsibility |
 | --- | --- |
-| `database.mjs` / `setup.mjs` | ERD storage, initial seed and provisioned accounts |
-| `permissions.mjs` | Configurable proposed role capabilities |
-| `analytics.mjs` | Fixture generator and analytical calculations |
-| `presentation.mjs` | Weighted grouping and calendar context |
-| `report.mjs` | Server-side PDF generation |
-| `server.mjs` | Routes, sessions, authorisation and feedback |
-| `public/app.js` / `public/styles.css` | Interface and chart rendering |
-| `*.test.mjs` | Automated verification |
+| `database.mjs`, `setup.mjs` | ERD storage, synthetic seed, credentials and sessions |
+| `accounts.mjs` | Business isolation, legacy migration, team membership and first-login password setup |
+| `permissions.mjs` | Owner/member capabilities |
+| `analytics.mjs` | Deterministic fixture and analytical calculations |
+| `calendar.mjs`, `presentation.mjs` | Calendar estimates/context and weighted grouping |
+| `insights.mjs` | Tenant-scoped views, privacy suppression and explainable flags |
+| `wireframe-report.mjs` | Current-view/dashboard PDFs |
+| `report.mjs` | Retained legacy report generator and regression coverage |
+| `server.mjs` | Local routes, validation, authorisation and feedback |
+| `public/app.js`, `public/styles.css` | Wireframe interface, navigation, charts and dialogs |
+| `*.test.mjs` | Calculation, migration, permission, privacy and export checks |
 
-This remains a local prototype. Password reset, account administration, deployment with HTTPS, backup/recovery, production security review and final confidentiality rules remain outstanding. Basic audit events record login, logout, report export and feedback submission; they are not a complete audit-management system.
+## Browser checks
+
+1. Sign in as manager. Open a spend detail, then a week and day; inspect unavailable hourly timing and the table.
+2. Choose a single location/day with fewer than five records to inspect the hidden state and return-to-week flow.
+3. Open Search and filter location names, prices and dates. Open Team to inspect member access/status.
+4. Inspect Alerts over historical supplied-calendar dates. Follow a flag into its daily detail.
+5. Export both report scopes and verify privacy labels, filters and calendar notes.
+6. Sign in as reporting: details and exports work; Team and Alerts are absent and server access is forbidden.
+7. In an isolated test business, add a member and verify mandatory password setup. Never use real student information for testing.
+
+Production deployment, verified email/recovery, real data ingestion, final privacy policy and client acceptance are separate outstanding work.

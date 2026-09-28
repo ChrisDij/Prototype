@@ -1,10 +1,11 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { getMeta, getSummary } from './analytics.mjs';
+import { getMeta } from './analytics.mjs';
 import { openDatabase } from './database.mjs';
-import { calendar, presentation } from './presentation.mjs';
-import { makeReport } from './report.mjs';
+import { calendar } from './presentation.mjs';
+import { buildInsights } from './insights.mjs';
+import { makeWireframeReport } from './wireframe-report.mjs';
 
 const assets = new Map([['/', ['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/styles.css',['styles.css','text/css; charset=utf-8']]]);
 export function createApp({databasePath=fileURLToPath(new URL('./.local/shoplytics.sqlite',import.meta.url))}={}) {
@@ -30,14 +31,26 @@ export function createApp({databasePath=fileURLToPath(new URL('./.local/shoplyti
         if(req.headers.origin!==`http://${host}`)return json(403,{error:'Use the application page to perform this action.'});
         if(url.pathname==='/api/login'){
           const b=await body();const username=typeof b.username==='string'?b.username.trim().toLowerCase():'';
-          if(!/^[a-z0-9._-]{3,60}$/.test(username)||typeof b.password!=='string'||b.password.length>256)return json(401,{error:'Incorrect username or password.'});
+          if(!/^[a-z0-9.@_+-]{3,120}$/.test(username)||typeof b.password!=='string'||b.password.length>256)return json(401,{error:'Incorrect username or password.'});
           const found=store.authenticate(username,b.password);
           if(!found)return json(401,{error:'Incorrect username or password.'});
           store.endSession(token,null);const session=store.startSession(found);
           return json(200,{user:found},{'Set-Cookie':`shoplytics_session=${session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`});
         }
+        if(url.pathname==='/api/register'){
+          const b=await body();const username=store.register(b),found=store.authenticate(username,b.password);
+          store.endSession(token,null);const session=store.startSession(found);
+          return json(201,{user:found},{'Set-Cookie':`shoplytics_session=${session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`});
+        }
         if(url.pathname==='/api/logout'){store.endSession(token,user);return json(200,{ok:true},{'Set-Cookie':'shoplytics_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'});}
         if(!user)return json(401,{error:'Please sign in to continue.'});
+        if(url.pathname==='/api/password'){
+          const found=store.changePassword(user,await body()),session=store.startSession(found);
+          return json(200,{user:found},{'Set-Cookie':`shoplytics_session=${session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`});
+        }
+        if(user.mustChangePassword)return json(403,{error:'Set your own password before continuing.'});
+        if(url.pathname==='/api/team'){store.addMember(user,await body());return json(201,{ok:true});}
+        if(url.pathname==='/api/team/remove'){store.removeMember(user,(await body()).id);return json(200,{ok:true});}
         if(url.pathname==='/api/feedback'){
           if(!user.canFeedback)return json(403,{error:'Feedback is not available for this account.'});
           const b=await body();
@@ -50,17 +63,24 @@ export function createApp({databasePath=fileURLToPath(new URL('./.local/shoplyti
       if(url.pathname==='/api/session')return json(200,{user});
       if(url.pathname.startsWith('/api/')){
         if(!user)return json(401,{error:'Your session has ended. Please sign in again.'});
+        if(user.mustChangePassword)return json(403,{error:'Set your own password before continuing.'});
+        if(url.pathname==='/api/team')return json(200,{items:store.team(user)});
+        if(url.pathname==='/api/locations')return json(200,{items:store.locations(user)});
+        if(url.pathname==='/api/alerts'){
+          if(!user.canViewAlerts)return json(403,{error:'Only owners can access alerts.'});
+          return json(200,buildInsights(store,user,Object.fromEntries(url.searchParams)).alerts);
+        }
         if(url.pathname==='/api/meta')return json(200,{...getMeta(),coverage:store.coverage(),calendar:{periods:calendar.periods,events:calendar.events}});
         if(url.pathname==='/api/feedback')return json(200,{items:store.ownFeedback(user)});
         if(['/api/summary','/api/details','/api/report'].includes(url.pathname)){
           const q=Object.fromEntries(url.searchParams);const metric=q.metric||'recordCount';const grouping=q.grouping||'daily';const chart=q.chart||'line';
           if(!['line','column'].includes(chart))throw Error('Choose a line or column chart.');
+          if(q.scope&&!['current','dashboard'].includes(q.scope))throw Error('Choose current view or dashboard summary.');
           if(!user.canDrillDown&&(url.pathname==='/api/details'||metric!=='recordCount'))return json(403,{error:'This account can view transaction activity and summary figures only.'});
           if(url.pathname==='/api/report'&&!user.canExport)return json(403,{error:'Report export is not available for this account.'});
-          const summary=getSummary(q,store.records(),store.coverage());
-          const view=presentation(summary,grouping,metric);
+          const view=buildInsights(store,user,{...q,grouping,metric});
           if(url.pathname==='/api/report'){
-            const pdf=await makeReport(view,chart);store.audit(user.id,'report_exported');
+            const pdf=await makeWireframeReport(view,chart,q.scope||'current');store.audit(user.id,'report_exported');
             res.writeHead(200,{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="shoplytics-${q.from}-${q.to}.pdf"`});return res.end(pdf);
           }
           if(!user.canDrillDown){

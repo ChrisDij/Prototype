@@ -4,6 +4,7 @@ import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { getSyntheticRecords, getMeta } from './analytics.mjs';
 import { permissions } from './permissions.mjs';
+import { extendAccounts } from './accounts.mjs';
 const digest = token => createHash('sha256').update(token).digest('hex');
 const hashPassword = (password,salt) => scryptSync(password,salt,64);
 export function openDatabase(path=':memory:') {
@@ -54,11 +55,11 @@ export function openDatabase(path=':memory:') {
     } catch(e) {db.exec('ROLLBACK');throw e;}
   }
   const audit=(userId,action)=>db.prepare('INSERT INTO AuditEvent(user_id,action,created_at) VALUES(?,?,?)').run(userId,action,new Date().toISOString());
-  const publicUser=u=>({id:u.id,username:u.username,name:u.name,role:u.role,...permissions[u.role]});
-  return {
+  const publicUser=u=>({id:u.id,username:u.username,name:u.name,role:u.role,businessId:u.business_id,businessName:db.prepare('SELECT name FROM Business WHERE id=?').get(u.business_id)?.name,mustChangePassword:!!u.must_change,...permissions[u.role]});
+  const store = {
     db, close:()=>db.close(),
     addUser({username,name,role,password}) {
-      if(!/^[a-z0-9._-]{3,60}$/.test(username)||!Object.hasOwn(permissions,role)||typeof password!=='string'||password.length<12||password.length>256)throw Error('Use a valid username, role and password of 12–256 characters.');
+      if(!/^[a-z0-9.@_+-]{3,120}$/.test(username)||!Object.hasOwn(permissions,role)||typeof password!=='string'||password.length<12||password.length>256)throw Error('Use a valid email or username, role and password of 12–256 characters.');
       const salt=randomBytes(16).toString('hex');
       db.prepare('INSERT INTO AppUser(username,name,role,salt,password_hash) VALUES(?,?,?,?,?)').run(username,name,role,salt,hashPassword(password,salt).toString('hex'));
     },
@@ -66,7 +67,7 @@ export function openDatabase(path=':memory:') {
     authenticate(username,password) {
       const now=Date.now(),prior=db.prepare('SELECT * FROM LoginAttempt WHERE username=?').get(username);
       if(prior&&now-prior.window_start<900000&&prior.count>=5){const e=Error('Too many attempts. Try again in 15 minutes.');e.status=429;throw e;}
-      const u=db.prepare('SELECT * FROM AppUser WHERE username=?').get(username);
+      const u=db.prepare('SELECT * FROM AppUser WHERE username=? AND active=1').get(username);
       const candidate=hashPassword(password,u?.salt||'dummy-salt-for-nonexistent-account');
       const expected=u?Buffer.from(u.password_hash,'hex'):Buffer.alloc(64);
       if(!timingSafeEqual(candidate,expected)||!u){
@@ -84,7 +85,7 @@ export function openDatabase(path=':memory:') {
     },
     getSession(token) {
       if(!token)return null;
-      const u=db.prepare('SELECT u.* FROM AppUser u JOIN Session s ON s.user_id=u.id WHERE s.token_hash=? AND s.expires>?').get(digest(token),Date.now());
+      const u=db.prepare('SELECT u.* FROM AppUser u JOIN Session s ON s.user_id=u.id WHERE s.token_hash=? AND s.expires>? AND u.active=1').get(digest(token),Date.now());
       return u?publicUser(u):null;
     },
     endSession(token,user) {if(token)db.prepare('DELETE FROM Session WHERE token_hash=?').run(digest(token));if(user)audit(user.id,'logout');},
@@ -97,4 +98,5 @@ export function openDatabase(path=':memory:') {
     ownFeedback:user=>db.prepare('SELECT id,category,message,created_at FROM Feedback WHERE user_id=? ORDER BY id DESC LIMIT 30').all(user.id),
     audit,
   };
+  return extendAccounts(store);
 }
