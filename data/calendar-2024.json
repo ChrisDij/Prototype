@@ -1,0 +1,121 @@
+{
+  "year": 2024,
+  "source": {
+    "type": "user_supplied_image",
+    "file": "IMG_8845.jpg",
+    "publishedDate": "2023-06-20",
+    "independentlyVerified": false
+  },
+  "dateConvention": "ISO date-only; inclusive endpoints",
+  "periods": [
+    {
+      "id": "term-1",
+      "label": "First term",
+      "type": "teaching_term",
+      "start": "2024-02-12",
+      "end": "2024-03-28"
+    },
+    {
+      "id": "semester-1-recess",
+      "label": "Mid Semester 1 recess",
+      "type": "recess",
+      "start": "2024-03-29",
+      "end": "2024-04-07"
+    },
+    {
+      "id": "term-2",
+      "label": "Second term",
+      "type": "teaching_term",
+      "start": "2024-04-08",
+      "end": "2024-05-17"
+    },
+    {
+      "id": "june-a2",
+      "label": "June A2 assessment period",
+      "type": "assessment",
+      "start": "2024-05-20",
+      "end": "2024-06-08"
+    },
+    {
+      "id": "june-a3",
+      "label": "June A3 assessment period",
+      "type": "assessment",
+      "start": "2024-06-10",
+      "end": "2024-06-28"
+    },
+    {
+      "id": "mid-year-recess",
+      "label": "Mid-year recess",
+      "type": "recess",
+      "start": "2024-06-29",
+      "end": "2024-07-21"
+    },
+    {
+      "id": "term-3",
+      "label": "Third term",
+      "type": "teaching_term",
+      "start": "2024-07-22",
+      "end": "2024-09-06"
+    },
+    {
+      "id": "semester-2-recess",
+      "label": "Mid Semester 2 recess",
+      "type": "recess",
+      "start": "2024-09-07",
+      "end": "2024-09-15"
+    },
+    {
+      "id": "term-4",
+      "label": "Fourth term",
+      "type": "teaching_term",
+      "start": "2024-09-16",
+      "end": "2024-10-25"
+    },
+    {
+      "id": "november-a2",
+      "label": "November A2 assessment period",
+      "type": "assessment",
+      "start": "2024-10-28",
+      "end": "2024-11-20"
+    },
+    {
+      "id": "november-a3",
+      "label": "November A3 assessment period",
+      "type": "assessment",
+      "start": "2024-11-21",
+      "end": "2024-12-07"
+    }
+  ],
+  "events": [
+    {
+      "id": "university-reopens",
+      "label": "University reopens",
+      "start": "2024-01-02",
+      "end": "2024-01-02"
+    },
+    {
+      "id": "graduation",
+      "label": "Graduation ceremonies",
+      "start": "2024-03-25",
+      "end": "2024-03-28"
+    },
+    {
+      "id": "semester-1-ends",
+      "label": "First semester ends",
+      "start": "2024-06-28",
+      "end": "2024-06-28"
+    },
+    {
+      "id": "december-graduation",
+      "label": "December graduation ceremonies",
+      "start": "2024-12-09",
+      "end": "2024-12-13"
+    },
+    {
+      "id": "semester-2-ends",
+      "label": "Second semester ends",
+      "start": "2024-12-13",
+      "end": "2024-12-13"
+    }
+  ]
+}

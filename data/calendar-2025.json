@@ -1,0 +1,121 @@
+{
+  "year": 2025,
+  "source": {
+    "type": "user_supplied_image",
+    "file": "IMG_8844.jpg",
+    "publishedDate": "2024-06-03",
+    "independentlyVerified": false
+  },
+  "dateConvention": "ISO date-only; inclusive endpoints",
+  "periods": [
+    {
+      "id": "term-1",
+      "label": "First term",
+      "type": "teaching_term",
+      "start": "2025-02-10",
+      "end": "2025-03-28"
+    },
+    {
+      "id": "semester-1-recess",
+      "label": "Mid Semester 1 recess",
+      "type": "recess",
+      "start": "2025-03-29",
+      "end": "2025-04-06"
+    },
+    {
+      "id": "term-2",
+      "label": "Second term",
+      "type": "teaching_term",
+      "start": "2025-04-07",
+      "end": "2025-05-16"
+    },
+    {
+      "id": "june-a2",
+      "label": "June A2 assessment period",
+      "type": "assessment",
+      "start": "2025-05-19",
+      "end": "2025-06-10"
+    },
+    {
+      "id": "june-a3",
+      "label": "June A3 assessment period",
+      "type": "assessment",
+      "start": "2025-06-11",
+      "end": "2025-06-28"
+    },
+    {
+      "id": "mid-year-recess",
+      "label": "Mid-year recess",
+      "type": "recess",
+      "start": "2025-06-29",
+      "end": "2025-07-20"
+    },
+    {
+      "id": "term-3",
+      "label": "Third term",
+      "type": "teaching_term",
+      "start": "2025-07-21",
+      "end": "2025-09-05"
+    },
+    {
+      "id": "semester-2-recess",
+      "label": "Mid Semester 2 recess",
+      "type": "recess",
+      "start": "2025-09-06",
+      "end": "2025-09-14"
+    },
+    {
+      "id": "term-4",
+      "label": "Fourth term",
+      "type": "teaching_term",
+      "start": "2025-09-15",
+      "end": "2025-10-24"
+    },
+    {
+      "id": "november-a2",
+      "label": "November A2 assessment period",
+      "type": "assessment",
+      "start": "2025-10-27",
+      "end": "2025-11-19"
+    },
+    {
+      "id": "november-a3",
+      "label": "November A3 assessment period",
+      "type": "assessment",
+      "start": "2025-11-20",
+      "end": "2025-12-06"
+    }
+  ],
+  "events": [
+    {
+      "id": "university-reopens",
+      "label": "University reopens",
+      "start": "2025-01-02",
+      "end": "2025-01-02"
+    },
+    {
+      "id": "graduation",
+      "label": "Graduation ceremonies",
+      "start": "2025-03-24",
+      "end": "2025-03-28"
+    },
+    {
+      "id": "semester-1-ends",
+      "label": "First semester ends",
+      "start": "2025-06-28",
+      "end": "2025-06-28"
+    },
+    {
+      "id": "december-graduation",
+      "label": "December graduation ceremonies",
+      "start": "2025-12-08",
+      "end": "2025-12-12"
+    },
+    {
+      "id": "semester-2-ends",
+      "label": "Second semester ends",
+      "start": "2025-12-12",
+      "end": "2025-12-12"
+    }
+  ]
+}

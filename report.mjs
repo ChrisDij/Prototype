@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 const labels={recordCount:'Recorded transactions',totalRecordedValue:'Total recorded value',averageRecordedValue:'Average transaction value'};
 const fmt=(v,metric)=>v==null?'Unavailable':metric==='recordCount'?v.toLocaleString('en-ZA'):`R ${(v/100).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-const short=s=>s.slice(5);
+const short=s=>s;
 export function makeReport(view,chart='line') {
   return new Promise((resolve,reject)=>{
     const doc=new PDFDocument({size:'A4',margin:42,info:{Title:'Shoplytics market report',Author:'Shoplytics prototype'}}),chunks=[];
@@ -35,7 +35,7 @@ export function makeReport(view,chart='line') {
         if(previous)doc.strokeColor('#0d645c').lineWidth(1.8).stroke();
         if(values.length===1){const i=series.findIndex(p=>p.value!=null);doc.circle(x(i),y(series[i].value),3).fill('#0d645c');}
       }
-      [...new Set([0,Math.floor((series.length-1)/2),series.length-1])].forEach(i=>txt(short(series[i].from),x(i)-27,479,8,false,{width:54,align:'center'}));
+      [...new Set([0,Math.floor((series.length-1)/2),series.length-1])].forEach(i=>txt(short(series[i].from),x(i)-32,479,8,false,{width:64,align:'center'}));
     }else txt('No covered transaction data for this selection.',93,352,12);
     txt('Calendar context',42,518,12,true);
     const context=[...view.calendar.periods.map(p=>`${p.label}: ${p.from} to ${p.to}`),...view.calendar.events.map(e=>`${e.label}: ${e.start}${e.end!==e.start?' to '+e.end:''}`)];
@@ -44,13 +44,17 @@ export function makeReport(view,chart='line') {
     if(context.length>5){txt('See the calendar details on page 2.',42,541,10);}else context.forEach((line,i)=>txt(line,42,540+i*15,9));
     txt('Interpretation and coverage',42,640,12,true);
     txt(`Coverage: ${view.coverage.status}. ${view.coverage.from?`Available selected data: ${view.coverage.from} to ${view.coverage.to}.`:'No source coverage for the selected dates.'} Partial groups include only covered, selected days. Weekly groups start Monday. Averages use total value divided by transaction count.`,42,661,9,false,{lineGap:3});
-    txt('These are recorded transactions, not foot traffic or all retailer sales. Calendar context does not establish cause. Discount analysis is not included. Calendar source: team-supplied 2026 image; other years remain unclassified.',42,718,9,false,{lineGap:3});
+    txt('These are recorded transactions, not foot traffic or all retailer sales. Calendar context does not establish cause. Discount analysis is not included. Calendar sources: team-supplied 2024–2026 images; other years remain unclassified.',42,718,9,false,{lineGap:3});
     txt('Shoplytics | Prototype report',42,783,8);txt('1',530,783,8,false,{width:23,align:'right'});
     if(context.length>5){
       doc.addPage();txt('Calendar details',42,45,21,true);txt(`${view.range.from} to ${view.range.to}`,42,79,10);
-      context.forEach((line,i)=>txt(line,42,120+i*20,10));
-      txt('Events can overlap teaching periods. Dates not listed in the calendar are unclassified.',42,140+context.length*20,10);
-      txt('Shoplytics | Synthetic data | Team-supplied 2026 calendar',42,783,8);txt('2',530,783,8,false,{width:23,align:'right'});
+      let y=120,page=2;
+      const footer=()=>{txt('Shoplytics | Synthetic data | Calendars 2024–2026',42,783,8);txt(String(page),530,783,8,false,{width:23,align:'right'});};
+      for(const line of [...context,'Events can overlap teaching periods. Unlisted dates remain unclassified.']){
+        if(y>730){footer();doc.addPage();page++;txt('Calendar details (continued)',42,45,21,true);y=95;}
+        txt(line,42,y,9);y+=24;
+      }
+      footer();
     }
     doc.end();
   });

@@ -8,7 +8,8 @@ Updated 24 September 2026 after the prototype expansion. This is the current imp
 - [x] SQLite storage using the supplied four-entity ERD, populated with synthetic records.
 - [x] Separate application users, session storage, feedback and basic audit events.
 - [x] Server-enforced primary/reporting permissions, including report access.
-- [x] 2026 calendar annotations and calendar-period selection, including overlapping events and unclassified dates.
+- [x] 2024–2026 calendar annotations and calendar-period selection, including overlapping events and unclassified dates.
+- [x] Five-year synthetic history (28 September 2021–28 September 2026), year selection, and automatic preservation of existing accounts/data during the history upgrade.
 - [x] Daily, weekly and monthly grouping with transaction-weighted averages and partial-group labelling.
 - [x] Line/column chart switching and chart-value tables.
 - [x] PDF download of the selected metric, dates, grouping and chart, with summary figures and calendar/coverage qualifications.
@@ -25,7 +26,7 @@ Updated 24 September 2026 after the prototype expansion. This is the current imp
 | Named-retailer comparisons | Permission to disclose individual retailer figures | Apply visibility rules consistently to API responses, charts and exports |
 | Final secondary permissions | Approval of proposed detail, filter and export capabilities | Update `permissions.mjs` and corresponding API checks |
 | Privacy and aggregation thresholds | Minimum group sizes and confidentiality requirements | Suppress or aggregate small groups, including in PDFs; avoid indirect disclosure |
-| Calendar context for historical years | Additional annual calendars and maintenance owner | Load calendars by year; never reuse 2026 dates for other years |
+| Calendar context for 2021–2023 | Additional annual calendars and maintenance owner | 2024–2026 are implemented; earlier years remain unclassified |
 | Fair calendar-period comparison view | Which periods clients want to compare and chosen normalisation | Add explicit per-covered-day comparisons and coverage disclosure; current context is annotation and date selection only |
 
 ## Further implementation after the team agrees the workflow

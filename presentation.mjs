@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-export const calendar=JSON.parse(readFileSync(new URL('./data/calendar-2026.json',import.meta.url),'utf8'));
+import { calendar } from './calendar.mjs';
+export { calendar } from './calendar.mjs';
 const dayMs=86400000;
 const ms=s=>Date.parse(`${s}T00:00:00Z`);
 const iso=d=>new Date(d).toISOString().slice(0,10);
@@ -24,8 +24,8 @@ export function calendarContext(range) {
   const periods=calendar.periods.filter(overlap).map(p=>({...p,from:p.start<range.from?range.from:p.start,to:p.end>range.to?range.to:p.end}));
   let classifiedDays=0;
   for(let d=ms(range.from);d<=ms(range.to);d+=dayMs)if(periods.some(p=>p.from<=iso(d)&&p.to>=iso(d)))classifiedDays++;
-  return {year:2026,periods,events:calendar.events.filter(overlap),unclassifiedDays:Math.round((ms(range.to)-ms(range.from))/dayMs)+1-classifiedDays,
-    note:'2026 calendar supplied by the team; other years and unlisted dates remain unclassified. Calendar context does not establish cause.'};
+  return {years:calendar.years,periods,events:calendar.events.filter(overlap),unclassifiedDays:Math.round((ms(range.to)-ms(range.from))/dayMs)+1-classifiedDays,
+    note:'2024, 2025 and 2026 calendars supplied by the team; other years and unlisted dates remain unclassified. Calendar context does not establish cause.'};
 }
 export function seriesFor(grouped,metric='recordCount') {
   if(!['recordCount','totalRecordedValue','averageRecordedValue'].includes(metric))throw Error('Choose a supported metric.');

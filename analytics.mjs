@@ -11,8 +11,8 @@
 
 const DAY_MS = 86_400_000;
 const MAX_RANGE_DAYS = 1_830;
-const SOURCE_RANGE = Object.freeze({ from: '2026-06-01', to: '2026-08-31' });
-const DEFAULT_RANGE = Object.freeze({ from: '2026-08-01', to: '2026-08-31' });
+const SOURCE_RANGE = Object.freeze({ from: '2021-09-28', to: '2026-09-28' });
+const DEFAULT_RANGE = Object.freeze({ from: '2026-08-30', to: '2026-09-28' });
 const METRICS = Object.freeze([
   Object.freeze({ id: 'recordCount', label: 'Recorded transactions', unit: 'count' }),
   Object.freeze({ id: 'totalRecordedValue', label: 'Total recorded value', unit: 'minor' }),
@@ -128,6 +128,8 @@ function makeSyntheticRecords() {
   const end = dateMillis(SOURCE_RANGE.to, 'Source end');
   for (let ms = start; ms <= end; ms += DAY_MS) {
     const date = isoDate(ms);
+    // Preserve the original June-August 2026 fixture when expanding history.
+    if(date==='2026-06-01')state=7_202_606;
     const count = 12 + next() % 23;
     for (let item = 0; item < count; item += 1) {
       records.push(Object.freeze({
@@ -153,7 +155,7 @@ export function getMeta() {
     maxRangeDays: MAX_RANGE_DAYS,
     metrics: METRICS.map(metric => ({ ...metric })),
     synthetic: true,
-    disclaimer: 'Invented demonstration data for 1 June–31 August 2026. Values and transactions do not represent a real retailer or client dataset.',
+    disclaimer: 'Invented demonstration data for 28 September 2021–28 September 2026. Supplied calendars cover 2024–2026 only. Values and transactions do not represent a real retailer or client dataset.',
     semantics: {
       recordCount: 'Number of supplied transaction records; not unique customers or store visits.',
       totalRecordedValue: 'Sum of the recorded transaction values; treatment of tax, refunds and cancellations remains to be agreed.',

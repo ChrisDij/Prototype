@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { scryptSync, randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { getSyntheticRecords } from './analytics.mjs';
+import { getSyntheticRecords, getMeta } from './analytics.mjs';
 import { permissions } from './permissions.mjs';
 const digest = token => createHash('sha256').update(token).digest('hex');
 const hashPassword = (password,salt) => scryptSync(password,salt,64);
@@ -34,9 +34,24 @@ export function openDatabase(path=':memory:') {
       const t=db.prepare('INSERT INTO "Transaction" VALUES(?,?,?,?,?,?)');
       getSyntheticRecords().forEach((r,i)=>t.run(i+1,`synthetic-student-${i%50+1}`,i%4+1,`${r.date}T12:00:00Z`,r.valueMinor/100,null));
       const meta=db.prepare('INSERT INTO Dataset VALUES(?,?)');
-      meta.run('seed_version','1');meta.run('coverage_from','2026-06-01');meta.run('coverage_to','2026-08-31');
+      meta.run('seed_version','2');meta.run('coverage_from',getMeta().coverage.from);meta.run('coverage_to',getMeta().coverage.to);
       db.exec('COMMIT');
     }catch(e){db.exec('ROLLBACK');throw e;}
+  }
+  // Extend only the known v1 synthetic fixture, without replacing existing records.
+  if(db.prepare("SELECT value FROM Dataset WHERE key='seed_version'").get()?.value==='1') {
+    db.exec('BEGIN');
+    try {
+      const insert=db.prepare('INSERT INTO "Transaction"(student_id,vendor_id,datetime,value,discount) VALUES(?,?,?,?,?)');
+      const existing=new Set(db.prepare('SELECT DISTINCT substr(datetime,1,10) date FROM "Transaction"').all().map(r=>r.date));
+      getSyntheticRecords().forEach((r,i)=>{
+        if((r.date<'2026-06-01'||r.date>'2026-08-31')&&!existing.has(r.date))
+          insert.run(`synthetic-student-${i%50+1}`,i%4+1,`${r.date}T12:00:00Z`,r.valueMinor/100,null);
+      });
+      const update=db.prepare('UPDATE Dataset SET value=? WHERE key=?');
+      update.run(getMeta().coverage.from,'coverage_from');update.run(getMeta().coverage.to,'coverage_to');update.run('2','seed_version');
+      db.exec('COMMIT');
+    } catch(e) {db.exec('ROLLBACK');throw e;}
   }
   const audit=(userId,action)=>db.prepare('INSERT INTO AuditEvent(user_id,action,created_at) VALUES(?,?,?)').run(userId,action,new Date().toISOString());
   const publicUser=u=>({id:u.id,username:u.username,name:u.name,role:u.role,...permissions[u.role]});

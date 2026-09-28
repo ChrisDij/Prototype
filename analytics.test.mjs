@@ -88,7 +88,7 @@ test('baseline is unavailable when even one comparison day is missing', () => {
     { from: '2026-07-01', to: '2026-07-31' },
     { from: '2026-05-31', to: '2026-06-01' },
   ]) {
-    const result = getSummary(range);
+    const result = getSummary(range, [], {from:'2026-06-01',to:'2026-08-31'});
     assert.equal(result.comparison.available, false);
     assert.equal(result.comparison.totals, null);
     assert.equal(result.comparison.changes, null);
@@ -126,7 +126,7 @@ test('metadata callers cannot mutate the source coverage or metric contract', ()
   const meta = getMeta();
   meta.coverage.from = '2020-01-01';
   meta.metrics[0].id = 'footTraffic';
-  assert.equal(getMeta().coverage.from, '2026-06-01');
+  assert.equal(getMeta().coverage.from, '2021-09-28');
   assert.equal(getMeta().metrics[0].id, 'recordCount');
   assert.equal(getMeta().synthetic, true);
 });

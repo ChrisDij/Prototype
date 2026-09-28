@@ -18,7 +18,7 @@ test('grouped averages are weighted by transactions and partial weeks are explic
 });
 test('calendar retains overlaps, inclusive recess boundaries and unclassified dates',()=>{
   assert.equal(calendarContext({from:'2026-06-27',to:'2026-06-28'}).periods.length,2);
-  const grad=calendarContext({from:'2026-03-23',to:'2026-03-27'});assert.equal(grad.periods[0].id,'term-1');assert.equal(grad.events[0].id,'graduation');
+  const grad=calendarContext({from:'2026-03-23',to:'2026-03-27'});assert.equal(grad.periods[0].id,'2026-term-1');assert.equal(grad.events[0].id,'2026-graduation');
   assert.equal(calendarContext({from:'2026-05-16',to:'2026-05-17'}).unclassifiedDays,2);
   assert.equal(calendarContext({from:'2027-06-01',to:'2027-06-10'}).unclassifiedDays,10);
 });

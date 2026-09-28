@@ -1,6 +1,16 @@
 # Shoplytics working prototype
 
-Updated 24 September 2026. A local web application for Group 7, with synthetic transaction data, stored accounts, calendar context, charts, PDF reports and saved feedback. The official dataset is still outstanding. See [remaining work](REMAINING-WORK.md) for what is unfinished or requires approval.
+Updated 28 September 2026. A local web application for Group 7, with five years of synthetic transaction data, stored accounts, 2024–2026 calendar context, charts, PDF reports and saved feedback. See [remaining work](REMAINING-WORK.md) for what is unfinished or requires approval.
+
+## Five-year history and calendars
+
+Sample records cover **28 September 2021 through 28 September 2026**, inclusive. This is a fixed, reproducible demonstration window, not a live feed. Choose **Last 5 years** for a monthly overview, **Sample year** for an individual year, or enter custom dates. The 2021 and 2026 year selections cover only the available portions of those years. Chart figures and PDF exports use the selected range.
+
+The University period menu includes the supplied 2024, 2025 and 2026 calendars, with year-qualified names. Calendar dates add context; they do not supply actual transaction records or prove causes of spending changes. No dates are extrapolated for 2021–2023, and gaps within the supplied calendars stay unclassified.
+
+On the next startup, the original version-1 synthetic database is extended automatically. Existing June–August 2026 transactions, passwords, sessions and feedback are retained. New installations receive the complete five-year fixture. The migration is transactional and runs once.
+
+Calendar sources: 2024 was transcribed from team-supplied `IMG_8845.jpg` (Registrar, 20 June 2023); 2025 from `IMG_8844.jpg` (Registrar, 3 June 2024). The previously supplied 2026 calendar is retained. Structured dates and provenance are bundled in `data/calendar-2024.json`, `data/calendar-2025.json` and `data/calendar-2026.json`.
 
 ## Start the application
 
@@ -26,7 +36,7 @@ First startup creates `.local/shoplytics.sqlite`, loads synthetic data and provi
 - Primary and reporting access rules in `permissions.mjs`, enforced by the server.
 - Summary counts, total recorded values, weighted average values and preceding-period comparisons.
 - Date filtering; daily, Monday-based weekly and calendar-month grouping; line and column charts; accessible value tables; metric drill-down for primary users.
-- The supplied 2026 university calendar, with selectable periods, overlapping event annotations and explicit unclassified dates.
+- The supplied 2024–2026 university calendars, with selectable periods, overlapping event annotations and explicit unclassified dates.
 - Downloadable graphical PDF reports reflecting the applied dates, grouping, chart and permitted metric. Reports include summary values, coverage and calendar context.
 - Feedback submission and the signed-in user's own feedback history, saved across restarts. Feedback is not emailed; a team-wide review workflow remains pending.
 - Missing-coverage and empty-data states, synthetic-data labels and responsive layouts.
@@ -48,11 +58,11 @@ These are implementation proposals awaiting client/lecturer confirmation. Client
 
 SQLite implements the prescribed `Student`, `Vendor_Type`, `Vendor` and `Transaction` entities with their named fields, primary keys and foreign keys. Dates/timestamps use ISO text. The ERD's GPS point is represented as a nullable text field pending confirmation of the supplied point encoding. `value` and `discount` are numeric fields; calculations convert the seeded currency values to integer cents.
 
-The seed creates invented student identifiers with personal fields left null, four visibly synthetic vendors, one placeholder vendor type and transactions for June to August 2026. No real student information is present. Discount and vendor location fields remain null; no official category list or discount interpretation is invented. The seed's `value` means recorded monetary amount only, not a confirmed before/after-discount amount.
+The seed creates invented student identifiers with personal fields left null, four visibly synthetic vendors, one placeholder vendor type and transactions across the five-year sample window. No real student information is present. Discount and vendor location fields remain null; no official category list or discount interpretation is invented. The seed's `value` means recorded monetary amount only, not a confirmed before/after-discount amount.
 
 Application users are separate from source students and vendors. Additional tables hold dataset coverage, accounts, sessions, feedback, login attempts and audit events. The schema is in `database.mjs`.
 
-Current ingestion is an initial synthetic seed, not an importer for arbitrary official files. Dataset coverage is stored explicitly; it is not inferred from a lack of transactions. Timestamp handling in the fixture is UTC. Agree the actual source time zone before import. Calendar data is bundled in `data/calendar-2026.json`, copied from the project's reference folder for reproducible setup. Other years remain unclassified.
+Current ingestion is a synthetic seed, not an importer for arbitrary official files. Dataset coverage is stored explicitly; it is not inferred from a lack of transactions. Timestamp handling in the fixture is UTC. Agree the actual source time zone before import. Calendar data is bundled in `data/calendar-YYYY.json` for reproducible setup. Years without a supplied calendar remain unclassified.
 
 ## Calculation and report behaviour
 
@@ -62,7 +72,7 @@ The preceding comparison uses the same number of days and is available only if b
 
 ## Useful checks in the browser
 
-1. Sign in with the manager account, choose All sample data and switch Group by to Weekly and Chart to Columns.
+1. Sign in with the manager account, choose Last 5 years and switch Chart to Columns. Select an individual sample year or university period to explore further.
 2. Choose Mid-year recess and inspect the dates, calendar context and grouped figures.
 3. Open an average-value detail and download its PDF.
 4. Choose dates outside sample coverage and check that missing data is not shown as a genuine zero.
