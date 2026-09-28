@@ -7,9 +7,30 @@ import { makeReport } from './report.mjs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { calendars } from './calendar.mjs';
+
+test('inferred calendars preserve academic order and expose uncertainty without inventing events',()=>{
+  for(const year of [2021,2022,2023]){
+    const c=calendars.find(c=>c.year===year);
+    assert.equal(c.estimated,true);assert.deepEqual(c.source.basedOn,[2024,2025,2026]);
+    assert.equal(c.events.length,0);assert.equal(c.periods.length,11);
+    assert.equal(new Date(c.periods[0].start+'T00:00:00Z').getUTCDay(),1);
+    for(let i=0;i<c.periods.length;i++){
+      assert.ok(c.periods[i].start<=c.periods[i].end);
+      if(i)assert.ok(c.periods[i-1].end<c.periods[i].start);
+    }
+    const view=calendarContext({from:`${year}-01-01`,to:`${year}-12-31`});
+    assert.ok(view.estimatedDays>250);assert.ok(view.unclassifiedDays>0);
+    assert.equal(view.hasEstimatedCalendar,true);assert.match(view.note,/inferred/);
+    assert.ok(view.periods.every(p=>p.estimated&&!p.eligibleForAnomalyBaseline&&p.label.includes('(estimated)')));
+  }
+  const mixed=calendarContext({from:'2023-10-01',to:'2024-03-01'});
+  assert.ok(mixed.periods.some(p=>p.estimated));assert.ok(mixed.periods.some(p=>!p.estimated));
+  assert.equal(calendarContext({from:'2024-02-12',to:'2024-03-01'}).estimatedDays,0);
+});
 
 test('all supplied years have distinct periods, graduation events and exact boundaries',()=>{
-  assert.equal(new Set(calendar.periods.map(p=>p.id)).size,33);
+  assert.equal(new Set(calendar.periods.map(p=>p.id)).size,66);
   assert.equal(calendarContext({from:'2024-02-12',to:'2024-02-12'}).periods[0].id,'2024-term-1');
   assert.equal(calendarContext({from:'2025-02-10',to:'2025-02-10'}).periods[0].id,'2025-term-1');
   assert.equal(calendarContext({from:'2024-06-09',to:'2024-06-09'}).unclassifiedDays,1);
@@ -17,7 +38,7 @@ test('all supplied years have distinct periods, graduation events and exact boun
   assert.equal(calendarContext({from:'2025-06-10',to:'2025-06-11'}).periods.length,2);
   assert.equal(calendarContext({from:'2024-12-09',to:'2024-12-13'}).events.length,2);
   assert.equal(calendarContext({from:'2025-12-08',to:'2025-12-12'}).events.length,2);
-  assert.equal(calendarContext({from:'2022-01-01',to:'2022-12-31'}).unclassifiedDays,365);
+  assert.equal(calendarContext({from:'2020-01-01',to:'2020-12-31'}).unclassifiedDays,366);
 });
 
 test('five-year selection contains records throughout, including leap day, and exports',async()=>{

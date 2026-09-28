@@ -1,12 +1,12 @@
 # Shoplytics working prototype
 
-Updated 28 September 2026. A local web application for Group 7, with five years of synthetic transaction data, stored accounts, 2024–2026 calendar context, charts, PDF reports and saved feedback. See [remaining work](REMAINING-WORK.md) for what is unfinished or requires approval.
+Updated 28 September 2026. A local web application for Group 7, with five years of synthetic transaction data, stored accounts, 2021–2026 calendar context (2021–2023 estimated), charts, PDF reports and saved feedback. See [remaining work](REMAINING-WORK.md) for what is unfinished or requires approval.
 
 ## Five-year history and calendars
 
 Sample records cover **28 September 2021 through 28 September 2026**, inclusive. This is a fixed, reproducible demonstration window, not a live feed. Choose **Last 5 years** for a monthly overview, **Sample year** for an individual year, or enter custom dates. The 2021 and 2026 year selections cover only the available portions of those years. Chart figures and PDF exports use the selected range.
 
-The University period menu includes the supplied 2024, 2025 and 2026 calendars, with year-qualified names. Calendar dates add context; they do not supply actual transaction records or prove causes of spending changes. No dates are extrapolated for 2021–2023, and gaps within the supplied calendars stay unclassified.
+The University period menu includes the supplied 2024, 2025 and 2026 calendars, with year-qualified names. Calendar dates add context; they do not supply actual transaction records or prove causes of spending changes. 2021–2023 periods are explicitly estimated from the three supplied calendars. The method anchors first term to February's second Monday (common to all three sources), then uses the median start/end offsets from that anchor for each term, recess and assessment period. This preserves typical weekdays and approximate durations, not actual historical schedules. Pandemic disruptions and year-specific changes are not reconstructed. No graduation, reopening or semester-end events are invented. Estimates are labelled in filters, dashboard context and PDF reports; gaps remain unclassified. Estimated periods carry `estimated: true` and `eligibleForAnomalyBaseline: false` so future anomaly detection can exclude them as reliable calendar baselines.
 
 On the next startup, the original version-1 synthetic database is extended automatically. Existing June–August 2026 transactions, passwords, sessions and feedback are retained. New installations receive the complete five-year fixture. The migration is transactional and runs once.
 
@@ -62,7 +62,7 @@ The seed creates invented student identifiers with personal fields left null, fo
 
 Application users are separate from source students and vendors. Additional tables hold dataset coverage, accounts, sessions, feedback, login attempts and audit events. The schema is in `database.mjs`.
 
-Current ingestion is a synthetic seed, not an importer for arbitrary official files. Dataset coverage is stored explicitly; it is not inferred from a lack of transactions. Timestamp handling in the fixture is UTC. Agree the actual source time zone before import. Calendar data is bundled in `data/calendar-YYYY.json` for reproducible setup. Years without a supplied calendar remain unclassified.
+Current ingestion is a synthetic seed, not an importer for arbitrary official files. Dataset coverage is stored explicitly; it is not inferred from a lack of transactions. Timestamp handling in the fixture is UTC. Agree the actual source time zone before import. Calendar data is bundled in `data/calendar-YYYY.json` for reproducible setup. 2021–2023 use labelled estimates; other unsupported years remain unclassified.
 
 ## Calculation and report behaviour
 

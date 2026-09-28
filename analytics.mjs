@@ -155,7 +155,7 @@ export function getMeta() {
     maxRangeDays: MAX_RANGE_DAYS,
     metrics: METRICS.map(metric => ({ ...metric })),
     synthetic: true,
-    disclaimer: 'Invented demonstration data for 28 September 2021–28 September 2026. Supplied calendars cover 2024–2026 only. Values and transactions do not represent a real retailer or client dataset.',
+    disclaimer: 'Invented demonstration data for 28 September 2021–28 September 2026. Calendars: supplied 2024–2026; estimated 2021–2023 inferred from those calendars. Values and transactions do not represent a real retailer or client dataset.',
     semantics: {
       recordCount: 'Number of supplied transaction records; not unique customers or store visits.',
       totalRecordedValue: 'Sum of the recorded transaction values; treatment of tax, refunds and cancellations remains to be agreed.',

@@ -22,10 +22,15 @@ export function groupDaily(daily,grouping='daily') {
 export function calendarContext(range) {
   const overlap=p=>p.start<=range.to&&p.end>=range.from;
   const periods=calendar.periods.filter(overlap).map(p=>({...p,from:p.start<range.from?range.from:p.start,to:p.end>range.to?range.to:p.end}));
-  let classifiedDays=0;
-  for(let d=ms(range.from);d<=ms(range.to);d+=dayMs)if(periods.some(p=>p.from<=iso(d)&&p.to>=iso(d)))classifiedDays++;
-  return {years:calendar.years,periods,events:calendar.events.filter(overlap),unclassifiedDays:Math.round((ms(range.to)-ms(range.from))/dayMs)+1-classifiedDays,
-    note:'2024, 2025 and 2026 calendars supplied by the team; other years and unlisted dates remain unclassified. Calendar context does not establish cause.'};
+  let classifiedDays=0,estimatedDays=0;
+  for(let d=ms(range.from);d<=ms(range.to);d+=dayMs){
+    const matches=periods.filter(p=>p.from<=iso(d)&&p.to>=iso(d));
+    if(matches.length)classifiedDays++;
+    if(matches.some(p=>p.estimated))estimatedDays++;
+  }
+  const hasEstimatedCalendar=range.from<='2023-12-31'&&range.to>='2021-01-01';
+  return {years:calendar.years,periods,events:calendar.events.filter(overlap),estimatedDays,hasEstimatedCalendar,unclassifiedDays:Math.round((ms(range.to)-ms(range.from))/dayMs)+1-classifiedDays,
+    note:hasEstimatedCalendar?'Estimated calendar — inferred from 2024–2026 for 2021–2023. Illustrative dates only, not verified history or a reliable anomaly baseline. 2024–2026 dates are team-supplied. Unlisted dates remain unclassified.':'2024–2026 calendars supplied by the team; unlisted dates remain unclassified. Calendar context does not establish cause.'};
 }
 export function seriesFor(grouped,metric='recordCount') {
   if(!['recordCount','totalRecordedValue','averageRecordedValue'].includes(metric))throw Error('Choose a supported metric.');

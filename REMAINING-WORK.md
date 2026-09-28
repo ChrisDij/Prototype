@@ -26,7 +26,7 @@ Updated 24 September 2026 after the prototype expansion. This is the current imp
 | Named-retailer comparisons | Permission to disclose individual retailer figures | Apply visibility rules consistently to API responses, charts and exports |
 | Final secondary permissions | Approval of proposed detail, filter and export capabilities | Update `permissions.mjs` and corresponding API checks |
 | Privacy and aggregation thresholds | Minimum group sizes and confidentiality requirements | Suppress or aggregate small groups, including in PDFs; avoid indirect disclosure |
-| Calendar context for 2021–2023 | Additional annual calendars and maintenance owner | 2024–2026 are implemented; earlier years remain unclassified |
+| Calendar context for 2021–2023 | Additional annual calendars and maintenance owner | 2024–2026 are supplied; 2021–2023 now have labelled illustrative estimates, pending replacement with historical calendars |
 | Fair calendar-period comparison view | Which periods clients want to compare and chosen normalisation | Add explicit per-covered-day comparisons and coverage disclosure; current context is annotation and date selection only |
 
 ## Further implementation after the team agrees the workflow

@@ -38,18 +38,18 @@ export function makeReport(view,chart='line') {
       [...new Set([0,Math.floor((series.length-1)/2),series.length-1])].forEach(i=>txt(short(series[i].from),x(i)-32,479,8,false,{width:64,align:'center'}));
     }else txt('No covered transaction data for this selection.',93,352,12);
     txt('Calendar context',42,518,12,true);
-    const context=[...view.calendar.periods.map(p=>`${p.label}: ${p.from} to ${p.to}`),...view.calendar.events.map(e=>`${e.label}: ${e.start}${e.end!==e.start?' to '+e.end:''}`)];
-    if(view.calendar.unclassifiedDays)context.push(`${view.calendar.unclassifiedDays} selected days are not classified by the supplied calendar.`);
+    const context=[...(view.calendar.hasEstimatedCalendar?['2021–2023: ESTIMATED calendar, inferred from 2024–2026. Illustrative only.']:[]),...view.calendar.periods.map(p=>`${p.label}: ${p.from} to ${p.to}`),...view.calendar.events.map(e=>`${e.label}: ${e.start}${e.end!==e.start?' to '+e.end:''}`)];
+    if(view.calendar.unclassifiedDays)context.push(`${view.calendar.unclassifiedDays} selected days are not classified by the available calendars.`);
     // A longer calendar selection receives its own second page, never clipped.
     if(context.length>5){txt('See the calendar details on page 2.',42,541,10);}else context.forEach((line,i)=>txt(line,42,540+i*15,9));
     txt('Interpretation and coverage',42,640,12,true);
     txt(`Coverage: ${view.coverage.status}. ${view.coverage.from?`Available selected data: ${view.coverage.from} to ${view.coverage.to}.`:'No source coverage for the selected dates.'} Partial groups include only covered, selected days. Weekly groups start Monday. Averages use total value divided by transaction count.`,42,661,9,false,{lineGap:3});
-    txt('These are recorded transactions, not foot traffic or all retailer sales. Calendar context does not establish cause. Discount analysis is not included. Calendar sources: team-supplied 2024–2026 images; other years remain unclassified.',42,718,9,false,{lineGap:3});
+    txt('These are recorded transactions, not foot traffic or all retailer sales. Calendar context does not establish cause. Discount analysis is not included. Calendar: supplied 2024–2026; ESTIMATED 2021–2023, inferred from those calendars. Estimates are illustrative, not verified history or a reliable anomaly baseline.',42,718,9,false,{lineGap:3});
     txt('Shoplytics | Prototype report',42,783,8);txt('1',530,783,8,false,{width:23,align:'right'});
     if(context.length>5){
       doc.addPage();txt('Calendar details',42,45,21,true);txt(`${view.range.from} to ${view.range.to}`,42,79,10);
       let y=120,page=2;
-      const footer=()=>{txt('Shoplytics | Synthetic data | Calendars 2024–2026',42,783,8);txt(String(page),530,783,8,false,{width:23,align:'right'});};
+      const footer=()=>{txt('Shoplytics | Synthetic data | 2024–2026 supplied; 2021–2023 estimated',42,783,8);txt(String(page),530,783,8,false,{width:23,align:'right'});};
       for(const line of [...context,'Events can overlap teaching periods. Unlisted dates remain unclassified.']){
         if(y>730){footer();doc.addPage();page++;txt('Calendar details (continued)',42,45,21,true);y=95;}
         txt(line,42,y,9);y+=24;
