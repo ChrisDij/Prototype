@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getMeta, getSummary } from './analytics.mjs';
-import { calendar, calendarContext, presentation } from './presentation.mjs';
-import { openDatabase } from './database.mjs';
-import { makeReport } from './report.mjs';
+import { getMeta, getSummary } from '../src/analytics.mjs';
+import { calendar, calendarContext, presentation } from '../src/presentation.mjs';
+import { openDatabase } from '../src/database.mjs';
+import { makeReport } from '../src/report.mjs';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { calendars } from './calendar.mjs';
+import { calendars } from '../src/calendar.mjs';
 
 test('inferred calendars preserve academic order and expose uncertainty without inventing events',()=>{
   for(const year of [2021,2022,2023]){

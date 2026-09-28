@@ -8,7 +8,7 @@ import { buildInsights } from './insights.mjs';
 import { makeWireframeReport } from './wireframe-report.mjs';
 
 const assets = new Map([['/', ['index.html','text/html; charset=utf-8']],['/app.js',['app.js','text/javascript; charset=utf-8']],['/styles.css',['styles.css','text/css; charset=utf-8']]]);
-export function createApp({databasePath=fileURLToPath(new URL('./.local/shoplytics.sqlite',import.meta.url))}={}) {
+export function createApp({databasePath=fileURLToPath(new URL('../.local/shoplytics.sqlite',import.meta.url))}={}) {
   const store=openDatabase(databasePath);
   const server=createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Cache-Control','no-store');

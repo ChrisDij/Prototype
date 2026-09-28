@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { mkdtempSync,rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aggregateRecords } from './analytics.mjs';
-import { groupDaily,calendarContext,presentation } from './presentation.mjs';
-import { openDatabase } from './database.mjs';
-import { makeReport } from './report.mjs';
+import { aggregateRecords } from '../src/analytics.mjs';
+import { groupDaily,calendarContext,presentation } from '../src/presentation.mjs';
+import { openDatabase } from '../src/database.mjs';
+import { makeReport } from '../src/report.mjs';
 
 test('grouped averages are weighted by transactions and partial weeks are explicit',()=>{
   const records=[{date:'2026-06-01',valueMinor:100},{date:'2026-06-02',valueMinor:400},{date:'2026-06-02',valueMinor:400},{date:'2026-06-02',valueMinor:400}];

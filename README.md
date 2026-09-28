@@ -30,7 +30,7 @@ First startup provisions manager and reporting accounts with random passwords in
 
 The fixed demonstration window is 28 September 2021 through 28 September 2026, inclusive. **All 5 years** opens a monthly overview. Custom date fields and the year-qualified calendar-period menu support narrower selections. This is not a live feed.
 
-The team-supplied 2024–2026 calendars are retained in `data/calendar-YYYY.json`, including source provenance. 2024 came from `IMG_8845.jpg` (Registrar, 20 June 2023), 2025 from `IMG_8844.jpg` (Registrar, 3 June 2024), and 2026 from the previously supplied calendar.
+The team-supplied 2024–2026 calendars are retained in `src/data/calendar-YYYY.json`, including source provenance. 2024 came from `IMG_8845.jpg` (Registrar, 20 June 2023), 2025 from `IMG_8844.jpg` (Registrar, 3 June 2024), and 2026 from the previously supplied calendar.
 
 2021–2023 periods are explicitly estimated. The method anchors first term to February's second Monday, then uses median start/end offsets from the three supplied calendars. This approximates weekday patterns and durations, not verified historical schedules; pandemic disruptions are not reconstructed. No graduation, reopening or semester-end events are invented. Estimates remain labelled in filters, context and reports, and are excluded from anomaly baselines. Unlisted dates remain unclassified.
 
@@ -46,21 +46,32 @@ Count and average-value flags compare a location/day against up to eight prior m
 
 Discounts are null, addresses/GPS are absent, and seeded timestamps are noon placeholders. Discount measures, maps, hourly charts and discount/hourly-concentration alerts explicitly say unavailable. They are not fabricated. Account recovery email and payment are not connected. The tagline uses neutral BoschCard wording rather than asserting an unverified premium-service relationship.
 
+## Folder structure
+
+```text
+src/             Application modules
+  public/        Browser JavaScript, styles and HTML
+  data/          Bundled calendar files
+test/            Automated tests
+.local/          Private runtime data (unchanged, Git-ignored)
+package.json     Commands and dependencies
+```
+
 ## Main files
 
 | File | Responsibility |
 | --- | --- |
-| `database.mjs`, `setup.mjs` | ERD storage, synthetic seed, credentials and sessions |
-| `accounts.mjs` | Business isolation, legacy migration, team membership and first-login password setup |
-| `permissions.mjs` | Owner/member capabilities |
-| `analytics.mjs` | Deterministic fixture and analytical calculations |
-| `calendar.mjs`, `presentation.mjs` | Calendar estimates/context and weighted grouping |
-| `insights.mjs` | Tenant-scoped views, privacy suppression and explainable flags |
-| `wireframe-report.mjs` | Current-view/dashboard PDFs |
-| `report.mjs` | Retained legacy report generator and regression coverage |
-| `server.mjs` | Local routes, validation, authorisation and feedback |
-| `public/app.js`, `public/styles.css` | Wireframe interface, navigation, charts and dialogs |
-| `*.test.mjs` | Calculation, migration, permission, privacy and export checks |
+| `src/database.mjs`, `src/setup.mjs` | ERD storage, synthetic seed, credentials and sessions |
+| `src/accounts.mjs` | Business isolation, legacy migration, team membership and first-login password setup |
+| `src/permissions.mjs` | Owner/member capabilities |
+| `src/analytics.mjs` | Deterministic fixture and analytical calculations |
+| `src/calendar.mjs`, `src/presentation.mjs` | Calendar estimates/context and weighted grouping |
+| `src/insights.mjs` | Tenant-scoped views, privacy suppression and explainable flags |
+| `src/wireframe-report.mjs` | Current-view/dashboard PDFs |
+| `src/report.mjs` | Retained legacy report generator and regression coverage |
+| `src/server.mjs` | Local routes, validation, authorisation and feedback |
+| `src/public/app.js`, `src/public/styles.css` | Wireframe interface, navigation, charts and dialogs |
+| `test/*.test.mjs` | Calculation, migration, permission, privacy and export checks |
 
 ## Browser checks
 

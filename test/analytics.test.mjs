@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { aggregateRecords, getDetails, getMeta, getSummary, validateRange } from './analytics.mjs';
+import { aggregateRecords, getDetails, getMeta, getSummary, validateRange } from '../src/analytics.mjs';
 
 const fixture = [
   { date: '2026-06-01', valueMinor: 100 },

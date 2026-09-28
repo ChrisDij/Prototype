@@ -4,8 +4,8 @@ import { once } from 'node:events';
 import { mkdtempSync,rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openDatabase } from './database.mjs';
-import { createApp } from './server.mjs';
+import { openDatabase } from '../src/database.mjs';
+import { createApp } from '../src/server.mjs';
 
 test('login, role checks, exports, feedback isolation and logout work end to end',async t=>{
   const dir=mkdtempSync(join(tmpdir(),'shoplytics-api-')),path=join(dir,'test.sqlite');
@@ -16,6 +16,9 @@ test('login, role checks, exports, feedback isolation and logout work end to end
   t.after(async()=>{await new Promise(resolve=>server.close(resolve));rmSync(dir,{recursive:true,force:true});});
   const origin=`http://127.0.0.1:${server.address().port}`;
   const request=(path,options={})=>fetch(origin+path,options);
+  for(const [path,type] of [['/','text/html'],['/app.js','text/javascript'],['/styles.css','text/css']]){
+    const asset=await request(path);assert.equal(asset.status,200);assert.ok(asset.headers.get('content-type').startsWith(type));assert.ok((await asset.text()).length>0);
+  }
   const post=(path,body,cookie='')=>request(path,{method:'POST',headers:{origin,'Content-Type':'application/json',cookie},body:JSON.stringify(body)});
   const login=async role=>{const res=await post('/api/login',{username:role,password:'integration-test-password'});assert.equal(res.status,200);return res.headers.get('set-cookie').split(';')[0];};
   assert.equal((await request('/api/summary?from=2026-08-01&to=2026-08-31')).status,401);
