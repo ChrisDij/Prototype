@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Local Group 7 discovery prototype with synthetic transaction data",
   "scripts": {
     "start": "node src/setup.mjs && node src/server.mjs",
     "test": "node --test test/*.test.mjs",

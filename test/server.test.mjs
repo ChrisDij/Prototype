@@ -1,61 +1,264 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { once } from 'node:events';
-import { mkdtempSync,rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { openDatabase } from '../src/database.mjs';
-import { createApp } from '../src/server.mjs';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { once } from "node:events";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { openDatabase } from "../src/database.mjs";
+import { createApp } from "../src/server.mjs";
 
-test('login, role checks, exports, feedback isolation and logout work end to end',async t=>{
-  const dir=mkdtempSync(join(tmpdir(),'shoplytics-api-')),path=join(dir,'test.sqlite');
-  const s=openDatabase(path);
-  for(const role of ['manager','reporting'])s.addUser({username:role,name:role,role,password:'integration-test-password'});
+test("login, role checks, exports, feedback isolation and logout work end to end", async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "shoplytics-api-")),
+    path = join(dir, "test.sqlite");
+  const s = openDatabase(path);
+  for (const role of ["manager", "reporting"])
+    s.addUser({
+      username: role,
+      name: role,
+      role,
+      password: "integration-test-password",
+    });
   s.close();
-  const server=createApp({databasePath:path});server.listen(0,'127.0.0.1');await once(server,'listening');
-  t.after(async()=>{await new Promise(resolve=>server.close(resolve));rmSync(dir,{recursive:true,force:true});});
-  const origin=`http://127.0.0.1:${server.address().port}`;
-  const request=(path,options={})=>fetch(origin+path,options);
-  for(const [path,type] of [['/','text/html'],['/app.js','text/javascript'],['/styles.css','text/css']]){
-    const asset=await request(path);assert.equal(asset.status,200);assert.ok(asset.headers.get('content-type').startsWith(type));assert.ok((await asset.text()).length>0);
+  const server = createApp({ databasePath: path });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  t.after(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const request = (path, options = {}) => fetch(origin + path, options);
+  for (const [path, type] of [
+    ["/", "text/html"],
+    ["/app.js", "text/javascript"],
+    ["/styles.css", "text/css"],
+  ]) {
+    const asset = await request(path);
+    assert.equal(asset.status, 200);
+    assert.ok(asset.headers.get("content-type").startsWith(type));
+    assert.ok((await asset.text()).length > 0);
   }
-  const post=(path,body,cookie='')=>request(path,{method:'POST',headers:{origin,'Content-Type':'application/json',cookie},body:JSON.stringify(body)});
-  const login=async role=>{const res=await post('/api/login',{username:role,password:'integration-test-password'});assert.equal(res.status,200);return res.headers.get('set-cookie').split(';')[0];};
-  assert.equal((await request('/api/summary?from=2026-08-01&to=2026-08-31')).status,401);
-  assert.equal((await request('/.local/accounts.txt')).status,404);
-  assert.equal((await post('/api/demo/login',{role:'manager'})).status,401);
-  assert.equal((await post('/api/login',{username:'manager',password:'wrong'})).status,401);
-  assert.equal((await request('/api/login',{method:'POST',headers:{origin:'http://elsewhere.test','Content-Type':'application/json'},body:'{}'})).status,403);
-  const reporter=await login('reporting'),manager=await login('manager');
-  const q='from=2026-08-01&to=2026-08-31&grouping=weekly';
-  const reportSummary=await (await request(`/api/summary?${q}`,{headers:{cookie:reporter}})).json();
-  assert.ok(reportSummary.series.length>=5);assert.ok(Object.hasOwn(reportSummary.series[0],'averageRecordedValueMinor'));
-  assert.ok(Object.hasOwn(reportSummary.daily[0],'totalRecordedValueMinor'));
-  assert.equal(reportSummary.alerts,undefined);
-  assert.equal((await request(`/api/details?${q}`,{headers:{cookie:reporter}})).status,200);
-  assert.equal((await request(`/api/report?${q}&metric=averageRecordedValue`,{headers:{cookie:reporter}})).status,200);
-  assert.equal((await request(`/api/alerts?${q}`,{headers:{cookie:reporter}})).status,403);
-  assert.equal((await request('/api/team',{headers:{cookie:reporter}})).status,403);
-  const pdf=await request(`/api/report?${q}&chart=column`,{headers:{cookie:reporter}});assert.equal(pdf.status,200);assert.equal(pdf.headers.get('content-type'),'application/pdf');assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');
-  const detail=await request(`/api/details?${q}&metric=averageRecordedValue`,{headers:{cookie:manager}});assert.equal(detail.status,200);assert.equal((await detail.json()).metric,'averageRecordedValue');
-  const invalid=await request('/api/summary?from=2026-08-31&to=2026-08-01',{headers:{cookie:manager}});assert.equal(invalid.status,400);
-  const feedback=await post('/api/feedback',{category:'Usability',message:'A useful local feedback check.'},manager);assert.equal(feedback.status,201);
-  assert.equal((await (await request('/api/feedback',{headers:{cookie:manager}})).json()).items.length,1);
-  assert.equal((await (await request('/api/feedback',{headers:{cookie:reporter}})).json()).items.length,0);
-  assert.equal((await post('/api/feedback',{category:'Usability',message:'x'},manager)).status,400);
-  assert.equal((await post('/api/team',{name:'New member',email:'newmember@example.test',password:'temporary-test-password'},manager)).status,201);
-  const first=await post('/api/login',{username:'newmember@example.test',password:'temporary-test-password'});
-  const temporary=first.headers.get('set-cookie').split(';')[0];assert.equal((await first.json()).user.mustChangePassword,true);
-  for(const endpoint of ['/api/meta','/api/summary?'+q,'/api/report?'+q,'/api/locations','/api/team'])assert.equal((await request(endpoint,{headers:{cookie:temporary}})).status,403);
-  assert.equal((await post('/api/feedback',{category:'Usability',message:'Blocked before setup'},temporary)).status,403);
-  const changed=await post('/api/password',{password:'new-personal-password',confirm:'new-personal-password'},temporary);assert.equal(changed.status,200);
-  const fresh=changed.headers.get('set-cookie').split(';')[0];assert.notEqual(fresh,temporary);
-  assert.equal((await request('/api/details?'+q,{headers:{cookie:fresh}})).status,200);
-  assert.equal((await request('/api/details?'+q,{headers:{cookie:temporary}})).status,401);
-  const registration=await post('/api/register',{business:'Isolated retailer',name:'New owner',email:'isolated@example.test',password:'new-business-password'});assert.equal(registration.status,201);
-  const isolated=registration.headers.get('set-cookie').split(';')[0];
-  assert.deepEqual((await (await request('/api/locations',{headers:{cookie:isolated}})).json()).items,[]);
-  assert.equal((await request('/api/summary?'+q+'&location=1',{headers:{cookie:isolated}})).status,404);
-  assert.equal((await request('/api/report?'+q+'&location=1',{headers:{cookie:isolated}})).status,404);
-  await post('/api/logout',{},manager);assert.equal((await request('/api/meta',{headers:{cookie:manager}})).status,401);
+  const post = (path, body, cookie = "") =>
+    request(path, {
+      method: "POST",
+      headers: { origin, "Content-Type": "application/json", cookie },
+      body: JSON.stringify(body),
+    });
+  const login = async (role) => {
+    const res = await post("/api/login", {
+      username: role,
+      password: "integration-test-password",
+    });
+    assert.equal(res.status, 200);
+    return res.headers.get("set-cookie").split(";")[0];
+  };
+  assert.equal(
+    (await request("/api/summary?from=2026-08-01&to=2026-08-31")).status,
+    401,
+  );
+  assert.equal((await request("/.local/accounts.txt")).status, 404);
+  assert.equal(
+    (await post("/api/demo/login", { role: "manager" })).status,
+    401,
+  );
+  assert.equal(
+    (await post("/api/login", { username: "manager", password: "wrong" }))
+      .status,
+    401,
+  );
+  assert.equal(
+    (
+      await request("/api/login", {
+        method: "POST",
+        headers: {
+          origin: "http://elsewhere.test",
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      })
+    ).status,
+    403,
+  );
+  const reporter = await login("reporting"),
+    manager = await login("manager");
+  const q = "from=2026-08-01&to=2026-08-31&grouping=weekly";
+  const reportSummary = await (
+    await request(`/api/summary?${q}`, { headers: { cookie: reporter } })
+  ).json();
+  assert.ok(reportSummary.series.length >= 5);
+  assert.ok(
+    Object.hasOwn(reportSummary.series[0], "averageRecordedValueMinor"),
+  );
+  assert.ok(Object.hasOwn(reportSummary.daily[0], "totalRecordedValueMinor"));
+  assert.equal(reportSummary.alerts, undefined);
+  assert.equal(
+    (await request(`/api/details?${q}`, { headers: { cookie: reporter } }))
+      .status,
+    200,
+  );
+  assert.equal(
+    (
+      await request(`/api/report?${q}&metric=averageRecordedValue`, {
+        headers: { cookie: reporter },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request(`/api/alerts?${q}`, { headers: { cookie: reporter } }))
+      .status,
+    403,
+  );
+  assert.equal(
+    (await request("/api/team", { headers: { cookie: reporter } })).status,
+    403,
+  );
+  const pdf = await request(`/api/report?${q}&chart=column`, {
+    headers: { cookie: reporter },
+  });
+  assert.equal(pdf.status, 200);
+  assert.equal(pdf.headers.get("content-type"), "application/pdf");
+  assert.equal(
+    Buffer.from(await pdf.arrayBuffer())
+      .subarray(0, 5)
+      .toString(),
+    "%PDF-",
+  );
+  const detail = await request(
+    `/api/details?${q}&metric=averageRecordedValue`,
+    { headers: { cookie: manager } },
+  );
+  assert.equal(detail.status, 200);
+  assert.equal((await detail.json()).metric, "averageRecordedValue");
+  const invalid = await request("/api/summary?from=2026-08-31&to=2026-08-01", {
+    headers: { cookie: manager },
+  });
+  assert.equal(invalid.status, 400);
+  const feedback = await post(
+    "/api/feedback",
+    { category: "Usability", message: "A useful local feedback check." },
+    manager,
+  );
+  assert.equal(feedback.status, 201);
+  assert.equal(
+    (
+      await (
+        await request("/api/feedback", { headers: { cookie: manager } })
+      ).json()
+    ).items.length,
+    1,
+  );
+  assert.equal(
+    (
+      await (
+        await request("/api/feedback", { headers: { cookie: reporter } })
+      ).json()
+    ).items.length,
+    0,
+  );
+  assert.equal(
+    (
+      await post(
+        "/api/feedback",
+        { category: "Usability", message: "x" },
+        manager,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await post(
+        "/api/team",
+        {
+          name: "New member",
+          email: "newmember@example.test",
+          password: "temporary-test-password",
+        },
+        manager,
+      )
+    ).status,
+    201,
+  );
+  const first = await post("/api/login", {
+    username: "newmember@example.test",
+    password: "temporary-test-password",
+  });
+  const temporary = first.headers.get("set-cookie").split(";")[0];
+  assert.equal((await first.json()).user.mustChangePassword, true);
+  for (const endpoint of [
+    "/api/meta",
+    "/api/summary?" + q,
+    "/api/report?" + q,
+    "/api/locations",
+    "/api/team",
+  ])
+    assert.equal(
+      (await request(endpoint, { headers: { cookie: temporary } })).status,
+      403,
+    );
+  assert.equal(
+    (
+      await post(
+        "/api/feedback",
+        { category: "Usability", message: "Blocked before setup" },
+        temporary,
+      )
+    ).status,
+    403,
+  );
+  const changed = await post(
+    "/api/password",
+    { password: "new-personal-password", confirm: "new-personal-password" },
+    temporary,
+  );
+  assert.equal(changed.status, 200);
+  const fresh = changed.headers.get("set-cookie").split(";")[0];
+  assert.notEqual(fresh, temporary);
+  assert.equal(
+    (await request("/api/details?" + q, { headers: { cookie: fresh } })).status,
+    200,
+  );
+  assert.equal(
+    (await request("/api/details?" + q, { headers: { cookie: temporary } }))
+      .status,
+    401,
+  );
+  const registration = await post("/api/register", {
+    business: "Isolated retailer",
+    name: "New owner",
+    email: "isolated@example.test",
+    password: "new-business-password",
+  });
+  assert.equal(registration.status, 201);
+  const isolated = registration.headers.get("set-cookie").split(";")[0];
+  assert.deepEqual(
+    (
+      await (
+        await request("/api/locations", { headers: { cookie: isolated } })
+      ).json()
+    ).items,
+    [],
+  );
+  assert.equal(
+    (
+      await request("/api/summary?" + q + "&location=1", {
+        headers: { cookie: isolated },
+      })
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await request("/api/report?" + q + "&location=1", {
+        headers: { cookie: isolated },
+      })
+    ).status,
+    404,
+  );
+  await post("/api/logout", {}, manager);
+  assert.equal(
+    (await request("/api/meta", { headers: { cookie: manager } })).status,
+    401,
+  );
 });

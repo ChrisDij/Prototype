@@ -11,20 +11,35 @@
 
 const DAY_MS = 86_400_000;
 const MAX_RANGE_DAYS = 1_830;
-const SOURCE_RANGE = Object.freeze({ from: '2021-09-28', to: '2026-09-28' });
-const DEFAULT_RANGE = Object.freeze({ from: '2026-08-30', to: '2026-09-28' });
+const SOURCE_RANGE = Object.freeze({ from: "2021-09-28", to: "2026-09-28" });
+const DEFAULT_RANGE = Object.freeze({ from: "2026-08-30", to: "2026-09-28" });
 const METRICS = Object.freeze([
-  Object.freeze({ id: 'recordCount', label: 'Recorded transactions', unit: 'count' }),
-  Object.freeze({ id: 'totalRecordedValue', label: 'Total recorded value', unit: 'minor' }),
-  Object.freeze({ id: 'averageRecordedValue', label: 'Average recorded value', unit: 'minor' }),
+  Object.freeze({
+    id: "recordCount",
+    label: "Recorded transactions",
+    unit: "count",
+  }),
+  Object.freeze({
+    id: "totalRecordedValue",
+    label: "Total recorded value",
+    unit: "minor",
+  }),
+  Object.freeze({
+    id: "averageRecordedValue",
+    label: "Average recorded value",
+    unit: "minor",
+  }),
 ]);
 
 function dateMillis(value, label) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new Error(`${label} must be a date in YYYY-MM-DD format.`);
   }
   const ms = Date.parse(`${value}T00:00:00.000Z`);
-  if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0, 10) !== value) {
+  if (
+    !Number.isFinite(ms) ||
+    new Date(ms).toISOString().slice(0, 10) !== value
+  ) {
     throw new Error(`${label} must be a real calendar date.`);
   }
   return ms;
@@ -36,14 +51,18 @@ function isoDate(ms) {
 
 /** Validate a bounded selection; valid dates outside source coverage are allowed. */
 export function validateRange(options = {}) {
-  if (!options || typeof options !== 'object') throw new Error('Choose a date range.');
+  if (!options || typeof options !== "object")
+    throw new Error("Choose a date range.");
   const { from, to } = options;
-  const fromMs = dateMillis(from, 'Start date');
-  const toMs = dateMillis(to, 'End date');
-  if (fromMs > toMs) throw new Error('Start date must be on or before end date.');
+  const fromMs = dateMillis(from, "Start date");
+  const toMs = dateMillis(to, "End date");
+  if (fromMs > toMs)
+    throw new Error("Start date must be on or before end date.");
   const days = (toMs - fromMs) / DAY_MS + 1;
   if (days > MAX_RANGE_DAYS) {
-    throw new Error(`Choose a range of at most ${MAX_RANGE_DAYS.toLocaleString('en-ZA')} days.`);
+    throw new Error(
+      `Choose a range of at most ${MAX_RANGE_DAYS.toLocaleString("en-ZA")} days.`,
+    );
   }
   return { from, to, days };
 }
@@ -51,9 +70,9 @@ export function validateRange(options = {}) {
 function coverageFor(range, coverage) {
   const from = range.from > coverage.from ? range.from : coverage.from;
   const to = range.to < coverage.to ? range.to : coverage.to;
-  if (from > to) return { status: 'none', from: null, to: null };
+  if (from > to) return { status: "none", from: null, to: null };
   return {
-    status: from === range.from && to === range.to ? 'full' : 'partial',
+    status: from === range.from && to === range.to ? "full" : "partial",
     from,
     to,
   };
@@ -63,7 +82,9 @@ function totalsFor(recordCount, totalRecordedValueMinor) {
   return {
     recordCount,
     totalRecordedValueMinor,
-    averageRecordedValueMinor: recordCount ? Math.round(totalRecordedValueMinor / recordCount) : null,
+    averageRecordedValueMinor: recordCount
+      ? Math.round(totalRecordedValueMinor / recordCount)
+      : null,
   };
 }
 
@@ -76,12 +97,14 @@ function totalsFor(recordCount, totalRecordedValueMinor) {
  * average null; use coverage.status to distinguish no coverage from zero records.
  */
 export function aggregateRecords(records, options = {}) {
-  if (!Array.isArray(records)) throw new Error('Records must be an array.');
+  if (!Array.isArray(records)) throw new Error("Records must be an array.");
   const range = validateRange(options);
-  const sourceCoverage = options.coverage ? validateRange(options.coverage) : range;
+  const sourceCoverage = options.coverage
+    ? validateRange(options.coverage)
+    : range;
   const coverage = coverageFor(range, sourceCoverage);
   const days = new Map();
-  const fromMs = dateMillis(range.from, 'Start date');
+  const fromMs = dateMillis(range.from, "Start date");
   for (let offset = 0; offset < range.days; offset += 1) {
     const date = isoDate(fromMs + offset * DAY_MS);
     const covered = date >= sourceCoverage.from && date <= sourceCoverage.to;
@@ -96,25 +119,39 @@ export function aggregateRecords(records, options = {}) {
   let recordCount = 0;
   let totalRecordedValueMinor = 0;
   for (const record of records) {
-    if (!record || typeof record !== 'object') throw new Error('Each record must contain a date and value.');
-    dateMillis(record.date, 'Record date');
+    if (!record || typeof record !== "object")
+      throw new Error("Each record must contain a date and value.");
+    dateMillis(record.date, "Record date");
     if (!Number.isSafeInteger(record.valueMinor) || record.valueMinor < 0) {
-      throw new Error('Record values must be nonnegative safe integers in ZAR cents.');
+      throw new Error(
+        "Record values must be nonnegative safe integers in ZAR cents.",
+      );
     }
     const day = days.get(record.date);
     if (!day?.covered) continue;
     recordCount += 1;
     totalRecordedValueMinor += record.valueMinor;
     if (!Number.isSafeInteger(totalRecordedValueMinor)) {
-      throw new Error('The total recorded value exceeds the supported numeric range.');
+      throw new Error(
+        "The total recorded value exceeds the supported numeric range.",
+      );
     }
     day.recordCount += 1;
     day.totalRecordedValueMinor += record.valueMinor;
   }
   for (const day of days.values()) {
-    if (day.covered) Object.assign(day, totalsFor(day.recordCount, day.totalRecordedValueMinor));
+    if (day.covered)
+      Object.assign(
+        day,
+        totalsFor(day.recordCount, day.totalRecordedValueMinor),
+      );
   }
-  return { range, coverage, totals: totalsFor(recordCount, totalRecordedValueMinor), daily: [...days.values()] };
+  return {
+    range,
+    coverage,
+    totals: totalsFor(recordCount, totalRecordedValueMinor),
+    daily: [...days.values()],
+  };
 }
 
 function makeSyntheticRecords() {
@@ -124,19 +161,21 @@ function makeSyntheticRecords() {
     return state;
   };
   const records = [];
-  const start = dateMillis(SOURCE_RANGE.from, 'Source start');
-  const end = dateMillis(SOURCE_RANGE.to, 'Source end');
+  const start = dateMillis(SOURCE_RANGE.from, "Source start");
+  const end = dateMillis(SOURCE_RANGE.to, "Source end");
   for (let ms = start; ms <= end; ms += DAY_MS) {
     const date = isoDate(ms);
     // Preserve the original June-August 2026 fixture when expanding history.
-    if(date==='2026-06-01')state=7_202_606;
-    const count = 12 + next() % 23;
+    if (date === "2026-06-01") state = 7_202_606;
+    const count = 12 + (next() % 23);
     for (let item = 0; item < count; item += 1) {
-      records.push(Object.freeze({
-        id: `demo-${date}-${String(item + 1).padStart(3, '0')}`,
-        date,
-        valueMinor: 4_500 + next() % 355_501,
-      }));
+      records.push(
+        Object.freeze({
+          id: `demo-${date}-${String(item + 1).padStart(3, "0")}`,
+          date,
+          valueMinor: 4_500 + (next() % 355_501),
+        }),
+      );
     }
   }
   return Object.freeze(records);
@@ -144,24 +183,32 @@ function makeSyntheticRecords() {
 
 const SYNTHETIC_RECORDS = makeSyntheticRecords();
 
-export function getSyntheticRecords() { return SYNTHETIC_RECORDS.map(record => ({...record})); }
+export function getSyntheticRecords() {
+  return SYNTHETIC_RECORDS.map((record) => ({ ...record }));
+}
 
 export function getMeta() {
   return {
-    currency: 'ZAR',
-    amountUnit: 'minor',
+    currency: "ZAR",
+    amountUnit: "minor",
     coverage: { ...SOURCE_RANGE },
     defaultRange: { ...DEFAULT_RANGE },
     maxRangeDays: MAX_RANGE_DAYS,
-    metrics: METRICS.map(metric => ({ ...metric })),
+    metrics: METRICS.map((metric) => ({ ...metric })),
     synthetic: true,
-    disclaimer: 'Invented demonstration data for 28 September 2021–28 September 2026. Calendars: supplied 2024–2026; estimated 2021–2023 inferred from those calendars. Values and transactions do not represent a real retailer or client dataset.',
+    disclaimer:
+      "Invented demonstration data for 28 September 2021–28 September 2026. Calendars: supplied 2024–2026; estimated 2021–2023 inferred from those calendars. Values and transactions do not represent a real retailer or client dataset.",
     semantics: {
-      recordCount: 'Number of supplied transaction records; not unique customers or store visits.',
-      totalRecordedValue: 'Sum of the recorded transaction values; treatment of tax, refunds and cancellations remains to be agreed.',
-      averageRecordedValue: 'Total recorded value divided by recorded transaction count, rounded to the nearest ZAR cent.',
-      comparison: 'The immediately preceding period with the same number of calendar days. Available only when both periods are fully covered.',
-      missingCoverage: 'Uncovered days are unknown, not zero. Partial totals include covered dates only.',
+      recordCount:
+        "Number of supplied transaction records; not unique customers or store visits.",
+      totalRecordedValue:
+        "Sum of the recorded transaction values; treatment of tax, refunds and cancellations remains to be agreed.",
+      averageRecordedValue:
+        "Total recorded value divided by recorded transaction count, rounded to the nearest ZAR cent.",
+      comparison:
+        "The immediately preceding period with the same number of calendar days. Available only when both periods are fully covered.",
+      missingCoverage:
+        "Uncovered days are unknown, not zero. Partial totals include covered dates only.",
     },
   };
 }
@@ -172,19 +219,30 @@ function percentChange(current, previous) {
 }
 
 /** Summary adds a like-for-like preceding-period comparison to the aggregation. */
-export function getSummary(options = {}, records = SYNTHETIC_RECORDS, sourceCoverage = SOURCE_RANGE) {
-  const current = aggregateRecords(records, { ...options, coverage: sourceCoverage });
-  const start = dateMillis(current.range.from, 'Start date');
+export function getSummary(
+  options = {},
+  records = SYNTHETIC_RECORDS,
+  sourceCoverage = SOURCE_RANGE,
+) {
+  const current = aggregateRecords(records, {
+    ...options,
+    coverage: sourceCoverage,
+  });
+  const start = dateMillis(current.range.from, "Start date");
   const comparisonRange = {
     from: isoDate(start - current.range.days * DAY_MS),
     to: isoDate(start - DAY_MS),
     days: current.range.days,
   };
-  const available = current.coverage.status === 'full'
-    && comparisonRange.from >= sourceCoverage.from
-    && comparisonRange.to <= sourceCoverage.to;
+  const available =
+    current.coverage.status === "full" &&
+    comparisonRange.from >= sourceCoverage.from &&
+    comparisonRange.to <= sourceCoverage.to;
   const previous = available
-    ? aggregateRecords(records, { ...comparisonRange, coverage: sourceCoverage }).totals
+    ? aggregateRecords(records, {
+        ...comparisonRange,
+        coverage: sourceCoverage,
+      }).totals
     : null;
   return {
     ...current,
@@ -192,26 +250,48 @@ export function getSummary(options = {}, records = SYNTHETIC_RECORDS, sourceCove
       range: comparisonRange,
       available,
       totals: previous,
-      changes: previous ? {
-        recordCountPercent: percentChange(current.totals.recordCount, previous.recordCount),
-        totalRecordedValuePercent: percentChange(current.totals.totalRecordedValueMinor, previous.totalRecordedValueMinor),
-        averageRecordedValuePercent: percentChange(current.totals.averageRecordedValueMinor, previous.averageRecordedValueMinor),
-      } : null,
+      changes: previous
+        ? {
+            recordCountPercent: percentChange(
+              current.totals.recordCount,
+              previous.recordCount,
+            ),
+            totalRecordedValuePercent: percentChange(
+              current.totals.totalRecordedValueMinor,
+              previous.totalRecordedValueMinor,
+            ),
+            averageRecordedValuePercent: percentChange(
+              current.totals.averageRecordedValueMinor,
+              previous.averageRecordedValueMinor,
+            ),
+          }
+        : null,
     },
   };
 }
 
 /** Detail series uses count or ZAR minor units, matching the selected metric. */
-export function getDetails(options = {}, records = SYNTHETIC_RECORDS, sourceCoverage = SOURCE_RANGE) {
-  const metric = METRICS.find(candidate => candidate.id === options.metric);
-  if (!metric) throw new Error('Choose a supported metric.');
-  const aggregate = aggregateRecords(records, { ...options, coverage: sourceCoverage });
-  const key = metric.id === 'recordCount' ? metric.id : `${metric.id}Minor`;
+export function getDetails(
+  options = {},
+  records = SYNTHETIC_RECORDS,
+  sourceCoverage = SOURCE_RANGE,
+) {
+  const metric = METRICS.find((candidate) => candidate.id === options.metric);
+  if (!metric) throw new Error("Choose a supported metric.");
+  const aggregate = aggregateRecords(records, {
+    ...options,
+    coverage: sourceCoverage,
+  });
+  const key = metric.id === "recordCount" ? metric.id : `${metric.id}Minor`;
   return {
     ...aggregate,
     metric: metric.id,
     label: metric.label,
     unit: metric.unit,
-    series: aggregate.daily.map(day => ({ date: day.date, value: day[key], covered: day.covered })),
+    series: aggregate.daily.map((day) => ({
+      date: day.date,
+      value: day[key],
+      covered: day.covered,
+    })),
   };
 }
