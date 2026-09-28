@@ -20,8 +20,10 @@ First startup provisions manager and reporting accounts with random passwords in
 ## User flows
 
 - Log in using an existing demo username or an account email. Create a business account to become its owner; the new business has no connected locations or data.
-- Owners can add members on Team, generate temporary passwords, and remove member access. Share temporary credentials privately; email is not sent. A member must change the temporary password before accessing data. Password minimum is 12 characters, retaining the existing stronger policy rather than the wireframe's placeholder 8.
-- Both roles can view the dashboard, search their own locations, drill down month/week/day, switch line/bar charts, compare the preceding equal-length period, export a PDF and submit feedback.
+- Owners can add members on Team, generate temporary passwords, reset or reactivate member access, and remove access. Share temporary credentials privately; email is not sent. A member must change the temporary password before accessing data. Password minimum is 12 characters, retaining the existing stronger policy rather than the wireframe's placeholder 8.
+- Owners receive a one-time local recovery code at registration and can replace it while signed in. Recovery replaces the password and revokes existing sessions without relying on email delivery.
+- Owners can import a validated JSON dataset from Data setup. External student keys are pseudonymised before storage, locations and transactions are scoped to the business, and transaction ids are upserted idempotently.
+- Both roles can view the dashboard, search their own locations, drill down month/week/day, switch line/bar charts, compare the preceding equal-length period visually, export a PDF and submit feedback. View state is retained in the URL and local browser storage.
 - Owners see the alerts list and explanations and can manage their own team. Members cannot access these endpoints. Neither role can edit source transactions or view student identities.
 - Export offers the current view or a dashboard summary for the selected dates. Filters, privacy suppression, estimated-calendar qualifications and synthetic-data disclosures apply to both.
 - Feedback is stored with one of two categories (Insights or Usability) and the current screen. `/api/feedback` returns only the caller's submissions. No notification email is sent.
@@ -44,7 +46,13 @@ Count and average-value flags compare a location/day against up to eight prior m
 
 ## Data-dependent limitations
 
-Discounts are null, addresses/GPS are absent, and seeded timestamps are noon placeholders. Discount measures, maps, hourly charts and discount/hourly-concentration alerts explicitly say unavailable. They are not fabricated. Account recovery email and payment are not connected. The tagline uses neutral BoschCard wording rather than asserting an unverified premium-service relationship.
+The bundled demonstration data has null discounts, absent addresses/GPS and noon placeholder timestamps. Those views remain unavailable for the demonstration dataset. A validated import may explicitly declare reliable offset-bearing timestamps and discount amounts in ZAR cents; hourly detail and recorded discount measures then become available. Maps, discount alerts and hourly-concentration alerts remain unavailable. Email delivery and payment are not connected; account recovery uses a one-time local code instead. The tagline uses neutral BoschCard wording rather than asserting an unverified premium-service relationship.
+
+## Import contract
+
+Data setup accepts a version 1 JSON document of at most 10 MB and 50,000 transactions. Download the example from the application or use `src/importer.mjs` as the executable contract. Required declarations include an IANA time zone, inclusive coverage dates, locations, offset-bearing transaction timestamps, nonnegative integer `valueMinor` amounts and explicit source capabilities. `discountMinor` is accepted only when discount semantics are declared as `amountMinor`.
+
+Imports are local and owner-only. They upsert locations and transactions by external id; they do not delete omitted records. The contract is a technical boundary, not confirmation that the client has approved field definitions, refresh frequency, retention or privacy policy.
 
 ## Folder structure
 
@@ -62,7 +70,8 @@ package.json     Commands and dependencies
 | File | Responsibility |
 | --- | --- |
 | `src/database.mjs`, `src/setup.mjs` | ERD storage, synthetic seed, credentials and sessions |
-| `src/accounts.mjs` | Business isolation, legacy migration, team membership and first-login password setup |
+| `src/accounts.mjs` | Business isolation, imports, team membership, reactivation and password setup |
+| `src/importer.mjs` | Versioned transaction import validation and example contract |
 | `src/permissions.mjs` | Owner/member capabilities |
 | `src/analytics.mjs` | Deterministic fixture and analytical calculations |
 | `src/calendar.mjs`, `src/presentation.mjs` | Calendar estimates/context and weighted grouping |
@@ -70,7 +79,7 @@ package.json     Commands and dependencies
 | `src/wireframe-report.mjs` | Current-view/dashboard PDFs |
 | `src/report.mjs` | Retained legacy report generator and regression coverage |
 | `src/server.mjs` | Local routes, validation, authorisation and feedback |
-| `src/public/app.js`, `src/public/styles.css` | Wireframe interface, navigation, charts and dialogs |
+| `src/public/app.js`, `src/public/styles.css`, `src/public/enhancements.css` | Interface, navigation, charts, status states and dialogs |
 | `test/*.test.mjs` | Calculation, migration, permission, privacy and export checks |
 
 ## Browser checks
@@ -83,4 +92,4 @@ package.json     Commands and dependencies
 6. Sign in as reporting: details and exports work; Team and Alerts are absent and server access is forbidden.
 7. In an isolated test business, add a member and verify mandatory password setup. Never use real student information for testing.
 
-Production deployment, verified email/recovery, real data ingestion, final privacy policy and client acceptance are separate outstanding work.
+Production deployment, an automated BoschCard connection, optional verified email recovery, final privacy policy and client acceptance are separate outstanding work. Anomaly thresholds remain explicitly provisional until approved by the client.

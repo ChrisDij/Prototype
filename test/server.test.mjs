@@ -32,6 +32,7 @@ test("login, role checks, exports, feedback isolation and logout work end to end
     ["/", "text/html"],
     ["/app.js", "text/javascript"],
     ["/styles.css", "text/css"],
+    ["/enhancements.css", "text/css"],
   ]) {
     const asset = await request(path);
     assert.equal(asset.status, 200);
@@ -81,6 +82,22 @@ test("login, role checks, exports, feedback isolation and logout work end to end
   );
   const reporter = await login("reporting"),
     manager = await login("manager");
+  assert.equal(
+    (
+      await request("/api/import/example", {
+        headers: { cookie: reporter },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/api/import/example", {
+        headers: { cookie: manager },
+      })
+    ).status,
+    200,
+  );
   const q = "from=2026-08-01&to=2026-08-31&grouping=weekly";
   const reportSummary = await (
     await request(`/api/summary?${q}`, { headers: { cookie: reporter } })
@@ -231,6 +248,7 @@ test("login, role checks, exports, feedback isolation and logout work end to end
     password: "new-business-password",
   });
   assert.equal(registration.status, 201);
+  assert.ok((await registration.clone().json()).recoveryCode.length >= 24);
   const isolated = registration.headers.get("set-cookie").split(";")[0];
   assert.deepEqual(
     (

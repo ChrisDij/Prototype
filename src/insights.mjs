@@ -3,6 +3,12 @@ import { presentation, calendarContext, calendar } from "./presentation.mjs";
 export const privacyMinimum = 5;
 const day = 86400000,
   iso = (n) => new Date(n).toISOString().slice(0, 10);
+const priceBandLabels = {
+  under50: "Under R50",
+  "50to150": "R50–150",
+  "150to300": "R150–300",
+  "300plus": "R300+",
+};
 export function protect(row) {
   const hidden = row.recordCount != null && row.recordCount < privacyMinimum;
   if (!hidden) return { ...row, hidden: false };
@@ -12,6 +18,8 @@ export function protect(row) {
     recordCount: null,
     totalRecordedValueMinor: null,
     averageRecordedValueMinor: null,
+    totalDiscountMinor: null,
+    averageDiscountMinor: null,
     value: null,
   };
 }
@@ -27,6 +35,8 @@ export function partition(rows) {
         recordCount: null,
         totalRecordedValueMinor: null,
         averageRecordedValueMinor: null,
+        totalDiscountMinor: null,
+        averageDiscountMinor: null,
         value: null,
       };
   }
@@ -166,13 +176,16 @@ export function assessCounts(records, range, locations, coverage) {
     assessed,
     notAssessed,
     rule: "Counts or daily average values differ by more than 50% and two standard deviations from at least 4 eligible matching weekdays in the prior 8 weeks. Same location and calendar context; the day under review is excluded. Estimated calendars are not eligible. Small baseline counts are excluded.",
+    thresholdStatus:
+      "Provisional recommendation — client approval is required before production use.",
     note: "Not assessed — insufficient history applies where fewer than 4 eligible observations are available. Flags are not proof of fraud or causation. Flagged records remain in aggregates.",
   };
 }
 export function buildInsights(store, user, q) {
   validateRange(q);
   const locations = store.locations(user),
-    coverage = store.coverage();
+    coverage = store.coverage(user),
+    dataStatus = store.dataStatus(user);
   if (q.location && !locations.some((l) => String(l.id) === q.location)) {
     const e = Error("Location not found.");
     e.status = 404;
@@ -215,6 +228,44 @@ export function buildInsights(store, user, q) {
       : protect(view.totals);
   view.daily = partition(view.daily);
   view.series = partition(view.series);
+  const discountAvailable =
+    dataStatus.discountSemantics === "amountMinor" &&
+    selected.every((record) => record.discountMinor != null);
+  if (discountAvailable) {
+    const totalDiscountMinor = selected.reduce(
+      (sum, record) => sum + record.discountMinor,
+      0,
+    );
+    view.discounts = {
+      totalDiscountMinor: view.totals.hidden ? null : totalDiscountMinor,
+      averageDiscountMinor:
+        view.totals.hidden || !selected.length
+          ? null
+          : Math.round(totalDiscountMinor / selected.length),
+    };
+    view.series = view.series.map((row) => {
+      if (row.hidden)
+        return {
+          ...row,
+          totalDiscountMinor: null,
+          averageDiscountMinor: null,
+        };
+      const records = selected.filter(
+          (record) => record.date >= row.from && record.date <= row.to,
+        ),
+        totalDiscountMinor = records.reduce(
+          (sum, record) => sum + record.discountMinor,
+          0,
+        );
+      return {
+        ...row,
+        totalDiscountMinor,
+        averageDiscountMinor: records.length
+          ? Math.round(totalDiscountMinor / records.length)
+          : null,
+      };
+    });
+  }
   if (view.comparison.totals) {
     view.comparison.totals = protect(view.comparison.totals);
     if (view.totals.hidden || view.comparison.totals.hidden) {
@@ -256,10 +307,45 @@ export function buildInsights(store, user, q) {
   view.location = q.location
     ? locations.find((l) => String(l.id) === q.location).name
     : "All locations";
-  view.discountAvailable = false;
-  view.hourlyAvailable = false;
-  view.dataNote =
-    "Invented demonstration transactions. Discount values and reliable hourly timestamps were not supplied; those measures are unavailable. Newly registered businesses have no connected locations or data.";
+  view.priceBand = q.band ? priceBandLabels[q.band] : null;
+  view.discountAvailable = discountAvailable;
+  view.hourlyAvailable =
+    dataStatus.hourlyTimestamps && q.from === q.to && selected.length > 0;
+  if (view.hourlyAvailable) {
+    const hours = Array.from({ length: 24 }, (_, hour) => {
+      const records = selected.filter(
+          (record) => Number(record.datetime.slice(11, 13)) === hour,
+        ),
+        values = total(records),
+        totalDiscountMinor = discountAvailable
+          ? records.reduce((sum, record) => sum + record.discountMinor, 0)
+          : null,
+        label = `${String(hour).padStart(2, "0")}:00`;
+      return {
+        label,
+        from: q.from,
+        to: q.to,
+        ...values,
+        totalDiscountMinor,
+        averageDiscountMinor:
+          discountAvailable && records.length
+            ? Math.round(totalDiscountMinor / records.length)
+            : null,
+        value:
+          view.metric === "recordCount"
+            ? values.recordCount
+            : values[`${view.metric}Minor`],
+      };
+    });
+    view.hourly = partition(hours);
+  }
+  view.sourceCapabilities = {
+    hourlyTimestamps: dataStatus.hourlyTimestamps,
+    discountSemantics: dataStatus.discountSemantics,
+  };
+  view.dataNote = dataStatus.updatedAt
+    ? `Imported business data. Source time zone: ${dataStatus.timezone}. ${dataStatus.hourlyTimestamps ? "Reliable hourly timestamps were declared." : "Reliable hourly timestamps were not declared."} ${discountAvailable ? "Discounts are interpreted as amounts in ZAR cents." : "Discount semantics were not supplied."}`
+    : "Invented demonstration transactions. Discount values and reliable hourly timestamps were not supplied; those measures are unavailable. Newly registered businesses have no connected locations or data.";
   // The alerts list and reasons are owner-only; aggregate chart markers are shared.
   const alerts = assessCounts(
     all,

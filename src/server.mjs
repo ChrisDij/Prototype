@@ -6,11 +6,13 @@ import { openDatabase } from "./database.mjs";
 import { calendar } from "./presentation.mjs";
 import { buildInsights } from "./insights.mjs";
 import { makeWireframeReport } from "./wireframe-report.mjs";
+import { importExample } from "./importer.mjs";
 
 const assets = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
+  ["/enhancements.css", ["enhancements.css", "text/css; charset=utf-8"]],
 ]);
 export function createApp({
   databasePath = fileURLToPath(
@@ -43,7 +45,7 @@ export function createApp({
       .find((x) => x.startsWith("shoplytics_session="));
     const token = cookie?.slice("shoplytics_session=".length);
     const user = store.getSession(token);
-    async function body() {
+    async function body(maximum = 8192) {
       if (!req.headers["content-type"]?.startsWith("application/json")) {
         const e = Error("Expected JSON.");
         e.status = 415;
@@ -52,7 +54,7 @@ export function createApp({
       let raw = "";
       for await (const part of req) {
         raw += part;
-        if (raw.length > 8192) {
+        if (raw.length > maximum) {
           const e = Error("Request too large.");
           e.status = 413;
           throw e;
@@ -102,12 +104,13 @@ export function createApp({
         if (url.pathname === "/api/register") {
           const b = await body();
           const username = store.register(b),
-            found = store.authenticate(username, b.password);
+            found = store.authenticate(username, b.password),
+            recoveryCode = store.issueRecoveryCode(found);
           store.endSession(token, null);
           const session = store.startSession(found);
           return json(
             201,
-            { user: found },
+            { user: found, recoveryCode },
             {
               "Set-Cookie": `shoplytics_session=${session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`,
             },
@@ -124,7 +127,21 @@ export function createApp({
             },
           );
         }
+        if (url.pathname === "/api/recover") {
+          const found = store.recoverOwner(await body()),
+            session = store.startSession(found);
+          return json(
+            200,
+            { user: found },
+            {
+              "Set-Cookie": `shoplytics_session=${session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`,
+            },
+          );
+        }
         if (!user) return json(401, { error: "Please sign in to continue." });
+        if (url.pathname === "/api/recovery-code") {
+          return json(200, { code: store.issueRecoveryCode(user) });
+        }
         if (url.pathname === "/api/password") {
           const found = store.changePassword(user, await body()),
             session = store.startSession(found);
@@ -147,6 +164,14 @@ export function createApp({
         if (url.pathname === "/api/team/remove") {
           store.removeMember(user, (await body()).id);
           return json(200, { ok: true });
+        }
+        if (url.pathname === "/api/team/reset") {
+          store.resetMember(user, await body());
+          return json(200, { ok: true });
+        }
+        if (url.pathname === "/api/import") {
+          const result = store.importDataset(user, await body(10_000_000));
+          return json(200, { ok: true, ...result });
         }
         if (url.pathname === "/api/feedback") {
           if (!user.canFeedback)
@@ -200,9 +225,15 @@ export function createApp({
         if (url.pathname === "/api/meta")
           return json(200, {
             ...getMeta(),
-            coverage: store.coverage(),
+            coverage: store.coverage(user),
             calendar: { periods: calendar.periods, events: calendar.events },
+            data: store.dataStatus(user),
           });
+        if (url.pathname === "/api/import/example") {
+          if (!user.canManageTeam)
+            return json(403, { error: "Only owners can manage data imports." });
+          return json(200, importExample);
+        }
         if (url.pathname === "/api/feedback")
           return json(200, { items: store.ownFeedback(user) });
         if (

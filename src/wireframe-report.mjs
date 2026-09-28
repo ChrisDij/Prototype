@@ -25,7 +25,9 @@ export function makeWireframeReport(view, chart, scope) {
       scope === "dashboard" ? "Dashboard summary" : "Current view report",
       16,
     );
-    line(`${view.business} | ${view.location}`);
+    line(
+      `${view.business} | ${view.location}${view.priceBand ? ` | Price band: ${view.priceBand}` : ""}`,
+    );
     line(
       `${view.range.from} to ${view.range.to} | ${view.grouping} | ${chart}`,
     );
@@ -38,7 +40,7 @@ export function makeWireframeReport(view, chart, scope) {
     line(
       t.hidden
         ? "All selected metrics: Hidden"
-        : `Card transactions: ${t.recordCount ?? "Unavailable"}\nTotal student spend: ${money(t.totalRecordedValueMinor)}\nAverage transaction: ${money(t.averageRecordedValueMinor)}\nDiscounts: Not available`,
+        : `Card transactions: ${t.recordCount ?? "Unavailable"}\nTotal student spend: ${money(t.totalRecordedValueMinor)}\nAverage transaction: ${money(t.averageRecordedValueMinor)}\nDiscounts: ${view.discountAvailable ? money(view.discounts.totalDiscountMinor) : "Not available"}`,
       12,
     );
     line(
@@ -99,17 +101,22 @@ export function makeWireframeReport(view, chart, scope) {
       `Scale: 0 to ${view.metric === "recordCount" ? max : money(max)}. Gaps are hidden or unavailable values.`,
       9,
     );
-    line("Period / transactions / spend / average", 12);
+    if (view.series.some((row) => row.partial))
+      line(
+        "Partial period: at least one chart point covers only part of its normal period and should not be compared directly with complete periods.",
+        9,
+      );
+    line("Period / transactions / spend / average / average discount", 12);
     for (const row of view.series)
       line(
-        `${row.from} to ${row.to}: ${row.hidden ? "Hidden" : `${row.recordCount ?? "Unavailable"} / ${money(row.totalRecordedValueMinor)} / ${money(row.averageRecordedValueMinor)}`}${row.unusual ? " - Unusual activity" : ""}`,
+        `${row.from} to ${row.to}: ${row.hidden ? "Hidden" : `${row.recordCount ?? "Unavailable"} / ${money(row.totalRecordedValueMinor)} / ${money(row.averageRecordedValueMinor)} / ${view.discountAvailable ? money(row.averageDiscountMinor) : "Unavailable"}`}${row.unusual ? " - Unusual activity" : ""}`,
         9,
       );
     if (scope === "dashboard")
       for (const [title, rows] of [
         ["Spend by location", view.locations],
         ["Spend by price band", view.priceBands],
-        ["Busiest days", view.weekdays],
+        ["Transactions by weekday", view.weekdays],
       ]) {
         if (doc.y + 35 + rows.length * 25 > 740) doc.addPage();
         line(title, 13);

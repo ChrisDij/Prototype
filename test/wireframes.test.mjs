@@ -99,6 +99,35 @@ test("registration creates an isolated business and failed registration rolls ba
     store.close();
   }
 });
+test("owner recovery codes are one-time and revoke existing sessions", () => {
+  const { store, user } = setup();
+  try {
+    const token = store.startSession(user),
+      code = store.issueRecoveryCode(user),
+      nextPassword = password + "-recovered",
+      recovered = store.recoverOwner({
+        username: user.username,
+        code,
+        password: nextPassword,
+        confirm: nextPassword,
+      });
+    assert.equal(recovered.id, user.id);
+    assert.equal(store.getSession(token), null);
+    assert.equal(store.authenticate(user.username, nextPassword).id, user.id);
+    assert.throws(
+      () =>
+        store.recoverOwner({
+          username: user.username,
+          code,
+          password: password + "-again",
+          confirm: password + "-again",
+        }),
+      /incorrect or expired/,
+    );
+  } finally {
+    store.close();
+  }
+});
 test("team membership, password replacement, session revocation and owner boundaries", () => {
   const { store, user } = setup();
   try {
@@ -138,6 +167,19 @@ test("team membership, password replacement, session revocation and owner bounda
     assert.equal(
       store.authenticate("member@example.test", password + "new"),
       null,
+    );
+    store.resetMember(user, {
+      id: member.id,
+      password: password + "reset",
+    });
+    const reactivated = store.authenticate(
+      "member@example.test",
+      password + "reset",
+    );
+    assert.equal(reactivated.mustChangePassword, true);
+    assert.equal(
+      store.team(user).find((candidate) => candidate.id === member.id).active,
+      1,
     );
   } finally {
     store.close();
@@ -273,6 +315,12 @@ test("uncovered dates remain unavailable, and invalid chart/band filters are rej
     assert.equal(v.coverage.status, "none");
     assert.equal(v.totals.recordCount, null);
     assert.equal(v.totals.hidden, false);
+    const filtered = buildInsights(store, user, {
+      from: "2026-09-01",
+      to: "2026-09-02",
+      band: "50to150",
+    });
+    assert.equal(filtered.priceBand, "R50–150");
     assert.throws(
       () =>
         buildInsights(store, user, {
