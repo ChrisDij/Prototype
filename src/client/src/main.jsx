@@ -362,18 +362,37 @@ function Controls({ state, action, update }) {
           </Button>
         ))}
       </div>
+      {state.page === "dashboard" && (
+        <label>
+          Metric
+          <select
+            value={state.metric}
+            onChange={(event) =>
+              update({ metric: event.target.value }, true, true)
+            }
+          >
+            {Object.entries(labels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {(state.page === "dashboard" || state.page === "detail") && (
+        <label>
+          Chart
+          <select
+            value={state.chart}
+            onChange={(event) => update({ chart: event.target.value }, true)}
+          >
+            <option value="line">Line</option>
+            <option value="column">Bar</option>
+          </select>
+        </label>
+      )}
       {state.page === "detail" && (
         <>
-          <label>
-            Chart
-            <select
-              value={state.chart}
-              onChange={(event) => update({ chart: event.target.value }, true)}
-            >
-              <option value="line">Line</option>
-              <option value="column">Bar</option>
-            </select>
-          </label>
           <label>
             Compare with
             <select
@@ -392,6 +411,41 @@ function Controls({ state, action, update }) {
         Export
       </Button>
     </div>
+  );
+}
+function OwnerOverview({ state, navigate }) {
+  const alerts = state.view.alerts;
+  return (
+    <section className="panel owner-overview">
+      <h3>Owner overview</h3>
+      <dl>
+        <div>
+          <dt>Data coverage</dt>
+          <dd>
+            {state.meta.coverage.from} – {state.meta.coverage.to}
+          </dd>
+        </div>
+        <div>
+          <dt>Anomaly assessment</dt>
+          <dd>
+            {alerts.assessed} assessed · {alerts.notAssessed} not assessed
+          </dd>
+        </div>
+        <div>
+          <dt>Flags in this view</dt>
+          <dd>{alerts.items.length}</dd>
+        </div>
+        <div>
+          <dt>Detection status</dt>
+          <dd>Provisional · validation required</dd>
+        </div>
+      </dl>
+      <div className="owner-actions">
+        <Button onClick={() => navigate("team")}>Manage team</Button>{" "}
+        <Button onClick={() => navigate("data")}>Data setup</Button>{" "}
+        <Button onClick={() => navigate("alerts")}>Review alerts</Button>
+      </div>
+    </section>
   );
 }
 function MetricCards({ state, action }) {
@@ -772,13 +826,13 @@ function Dashboard({ state, submit, action, navigate, update }) {
           <MetricCards state={state} action={action} />
           <section className="panel chart-panel">
             <div className="section-heading">
-              <h3>Student spend over the selected period</h3>
+              <h3>{labels[state.metric]} over the selected period</h3>
               <div className="legend">
                 <span>▧ University calendar</span>
                 <span>🟠 Unusual activity</span>
                 <Button
                   kind="link"
-                  onClick={() => action("metric", "totalRecordedValue")}
+                  onClick={() => action("metric", state.metric)}
                 >
                   Open detail →
                 </Button>
@@ -802,6 +856,9 @@ function Dashboard({ state, submit, action, navigate, update }) {
           </div>
         </div>
         <aside>
+          {state.user.canViewAlerts && (
+            <OwnerOverview state={state} navigate={navigate} />
+          )}
           {state.user.canViewAlerts && (
             <RecentAlerts
               state={state}
@@ -1172,6 +1229,7 @@ function AlertsPage({ state, submit, action }) {
           <thead>
             <tr>
               <th>What happened</th>
+              <th>Review priority</th>
               <th>When</th>
               <th>Location</th>
               <th>Calendar context</th>
@@ -1189,6 +1247,9 @@ function AlertsPage({ state, submit, action }) {
                       {alert.title}
                     </Button>
                   </td>
+                  <td>
+                    <span className="badge orange">{alert.priority}</span>
+                  </td>
                   <td>{alert.date}</td>
                   <td>{alert.location}</td>
                   <td>{alert.context}</td>
@@ -1196,7 +1257,7 @@ function AlertsPage({ state, submit, action }) {
               ))
             ) : (
               <tr>
-                <td colSpan="4">
+                <td colSpan="5">
                   No flags for this selection. This does not imply every day
                   was assessed.
                 </td>
@@ -1279,7 +1340,15 @@ function AlertDetail({ state, action }) {
               deviation {format(alert.variation, alert.metric)}. The current
               day does not define its own baseline.
             </li>
+            <li>
+              Difference from baseline: {Math.abs(alert.deviationPercent).toFixed(1)}%
+              {alert.zScore == null
+                ? " (the baseline had no variation)"
+                : ` (${Math.abs(alert.zScore).toFixed(2)} standard deviations)`}
+              . Review priority: {alert.priority}.
+            </li>
             <li>Calendar context: {alert.context}.</li>
+            <li>Validation method: {alert.methodVersion}.</li>
           </ul>
           <p className="note">
             Unusual activity is not confirmed fraud or a confirmed cause.

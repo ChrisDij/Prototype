@@ -1,6 +1,8 @@
 # Shop-A-Lytics
 
-Local Group 7 application, updated 28 September 2026 to follow the supplied MVP wireframes and user flow. Uses invented transactions, not actual student or retailer activity. See [implementation status and remaining work](REMAINING-WORK.md) for explicit data-dependent limitations.
+Local Group 7 application, updated 29 September 2026 to follow the supplied MVP wireframes and user flow. Uses invented transactions, not actual student or retailer activity. See [implementation status and remaining work](REMAINING-WORK.md) for explicit data-dependent limitations.
+
+Quality documentation: [test plan](TEST-PLAN.md) and [issue register](ISSUES.md).
 
 ## Run
 

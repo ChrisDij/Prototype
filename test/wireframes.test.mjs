@@ -267,6 +267,11 @@ test("count alerts use prior observations, calendar matching and explicit insuff
   );
   assert.equal(a.items.length, 1);
   assert.equal(a.items[0].mean, 10);
+  assert.equal(a.items[0].direction, "higher");
+  assert.equal(a.items[0].deviationPercent, 200);
+  assert.equal(a.items[0].baselineCount, 5);
+  assert.equal(a.items[0].methodVersion, "weekday-calendar-v1");
+  assert.equal(a.validation.retainsFlaggedRecords, true);
   assert.ok(a.items[0].history.every((r) => r.date < "2026-08-31"));
   const estimated = assessCounts(
     records,
@@ -304,6 +309,36 @@ test("average-value alerts use historical per-day averages without changing tota
   assert.equal(a.items[0].mean, 100);
   assert.equal(a.items[0].value, 25);
   assert.equal(records.length, 60);
+});
+test("anomaly threshold is strict and exposes review evidence", () => {
+  const makeRecords = (current) => {
+    const records = [];
+    for (const [date, count] of [
+      ["2026-07-27", 10],
+      ["2026-08-03", 10],
+      ["2026-08-10", 10],
+      ["2026-08-17", 10],
+      ["2026-08-24", 10],
+      ["2026-08-31", current],
+    ])
+      for (let index = 0; index < count; index++)
+        records.push({ date, locationId: 1, valueMinor: 100 });
+    return records;
+  };
+  const assess = (current) =>
+    assessCounts(
+      makeRecords(current),
+      { from: "2026-08-31", to: "2026-08-31" },
+      [{ id: 1, name: "Test" }],
+      { from: "2021-09-28", to: "2026-09-28" },
+    );
+  assert.equal(assess(15).items.length, 0);
+  const flagged = assess(16).items[0];
+  assert.equal(flagged.metric, "recordCount");
+  assert.equal(flagged.deviationPercent, 60);
+  assert.equal(flagged.zScore, null);
+  assert.equal(flagged.priority, "Review");
+  assert.equal(flagged.threshold, 5);
 });
 test("uncovered dates remain unavailable, and invalid chart/band filters are rejected", () => {
   const { store, user } = setup();

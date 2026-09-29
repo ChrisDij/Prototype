@@ -71,6 +71,23 @@ function context(date) {
       .join("|")
   );
 }
+const anomalyEvidence = (value, mean, variation, history) => {
+  const difference = value - mean,
+    deviationPercent = mean ? (difference / mean) * 100 : null,
+    zScore = variation ? difference / variation : null;
+  return {
+    direction: difference > 0 ? "higher" : "lower",
+    deviationPercent,
+    zScore,
+    baselineCount: history.length,
+    threshold: Math.max(mean * 0.5, variation * 2),
+    priority:
+      Math.abs(deviationPercent || 0) >= 100 || Math.abs(zScore || 0) >= 3
+        ? "High variance"
+        : "Review",
+    methodVersion: "weekday-calendar-v1",
+  };
+};
 export function assessCounts(records, range, locations, coverage) {
   const counts = new Map(),
     amounts = new Map();
@@ -137,6 +154,7 @@ export function assessCounts(records, range, locations, coverage) {
           variation,
           ratio: current / mean,
           history,
+          ...anomalyEvidence(current, mean, variation, history),
         });
       const value = Math.round(amounts.get(`${location.id}:${date}`) / current);
       const averageHistory = history.map((h) => ({
@@ -167,6 +185,12 @@ export function assessCounts(records, range, locations, coverage) {
           variation: averageVariation,
           ratio: value / averageMean,
           history: averageHistory,
+          ...anomalyEvidence(
+            value,
+            averageMean,
+            averageVariation,
+            averageHistory,
+          ),
         });
     }
   return {
@@ -175,6 +199,16 @@ export function assessCounts(records, range, locations, coverage) {
     ),
     assessed,
     notAssessed,
+    validation: {
+      status: "provisional",
+      methodVersion: "weekday-calendar-v1",
+      minimumBaselineDays: 4,
+      lookbackWeeks: 8,
+      relativeThresholdPercent: 50,
+      standardDeviationThreshold: 2,
+      privacyMinimum,
+      retainsFlaggedRecords: true,
+    },
     rule: "Counts or daily average values differ by more than 50% and two standard deviations from at least 4 eligible matching weekdays in the prior 8 weeks. Same location and calendar context; the day under review is excluded. Estimated calendars are not eligible. Small baseline counts are excluded.",
     thresholdStatus:
       "Provisional recommendation — client approval is required before production use.",

@@ -15,4 +15,7 @@ test("application shell and dynamic interface retain accessibility landmarks", a
   assert.match(app, /role="alert"/);
   assert.match(app, /role="status"/);
   assert.match(app, /role="img"/);
+  assert.match(app, /Owner overview/);
+  assert.match(app, /value=\{state\.metric\}/);
+  assert.match(app, /Review priority/);
 });
