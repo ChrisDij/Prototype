@@ -4,14 +4,16 @@ Local Group 7 application, updated 28 September 2026 to follow the supplied MVP 
 
 ## Run
 
-Requires Node.js 22.13+ (tested with 24.2.0), built-in SQLite and PDFKit.
+Requires Node.js 22.13+ (tested with 24.2.0), React, Vite, Express, built-in SQLite and PDFKit.
 
 ```sh
 npm ci
 npm start
 ```
 
-Open http://127.0.0.1:4317. `SHOPLYTICS_PORT` overrides the port. The server is intentionally local-only. An experimental SQLite warning is normal on some Node versions.
+`npm start` builds the React interface with Vite and opens the production application at http://127.0.0.1:4317. `SHOPLYTICS_PORT` overrides the port. The server is intentionally local-only. An experimental SQLite warning is normal on some Node versions.
+
+For frontend development, run `npm run dev:api` and `npm run dev` in separate terminals, then open http://127.0.0.1:5173. Vite proxies API requests to the local Express server.
 
 First startup provisions manager and reporting accounts with random passwords in `.local/accounts.txt`. The database, credentials, sessions and feedback are private in `.local/` and must not be committed. Existing users automatically become owner/member users of Demo retailer without changing their credentials or transaction records. The migration supports populated legacy databases and repeated startups.
 
@@ -58,11 +60,13 @@ Imports are local and owner-only. They upsert locations and transactions by exte
 
 ```text
 src/             Application modules
-  public/        Browser JavaScript, styles and HTML
+  client/        React components and Vite HTML entry point
+  public/        Shared interface styles
   data/          Bundled calendar files
 test/            Automated tests
 .local/          Private runtime data (unchanged, Git-ignored)
 package.json     Commands and dependencies
+vite.config.js   Vite build and development proxy
 ```
 
 ## Main files
@@ -78,8 +82,10 @@ package.json     Commands and dependencies
 | `src/insights.mjs` | Tenant-scoped views, privacy suppression and explainable flags |
 | `src/wireframe-report.mjs` | Current-view/dashboard PDFs |
 | `src/report.mjs` | Retained legacy report generator and regression coverage |
-| `src/server.mjs` | Local routes, validation, authorisation and feedback |
-| `src/public/app.js`, `src/public/styles.css`, `src/public/enhancements.css` | Interface, navigation, charts, status states and dialogs |
+| `src/server.mjs` | Express routes, Vite build serving, validation, authorisation and feedback |
+| `src/client/src/main.jsx` | React pages, navigation, charts, forms, status states and dialogs |
+| `src/public/styles.css`, `src/public/enhancements.css` | Shared interface styling bundled by Vite |
+| `vite.config.js` | React build, output and local API proxy configuration |
 | `test/*.test.mjs` | Calculation, migration, permission, privacy and export checks |
 
 ## Browser checks

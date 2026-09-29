@@ -6,6 +6,8 @@ Updated 28 September 2026 against `Shop-A-Lytics MVP wireframes (3).pdf` and `us
 
 - Purple horizontal navigation, owner/member dashboard variants, four metric cards, price-band and weekday charts, own-location summary, responsive layouts.
 - Owner registration with isolated businesses; email or legacy username login; salted password hashes and expiring sessions. Existing local credentials and data survive migration.
+- Express 5 backend routing and middleware while retaining the existing local API contract, security headers and role checks.
+- React 19 component interface built by Vite, with the existing page behaviour, charts, filters, dialogs and responsive styling retained.
 - Owner-only team list/add/remove/reset/reactivate. Generated temporary passwords must be shared privately; first login requires a different personal password before any data access. Removal and reset revoke sessions and retain audit history.
 - Members can view, drill down, customise charts and export. Team and alert-list access are rejected by the server, not only hidden in the interface.
 - Date and calendar filters; full five-year history; month/week/day navigation, breadcrumbs and weighted aggregates; line/bar selection and visual previous-period comparison.

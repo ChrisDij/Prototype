@@ -28,15 +28,20 @@ test("login, role checks, exports, feedback isolation and logout work end to end
   });
   const origin = `http://127.0.0.1:${server.address().port}`;
   const request = (path, options = {}) => fetch(origin + path, options);
+  const shell = await request("/"),
+    html = await shell.text();
+  assert.equal(shell.status, 200);
+  assert.ok(shell.headers.get("content-type").startsWith("text/html"));
+  assert.equal(shell.headers.get("x-powered-by"), null);
   for (const [path, type] of [
-    ["/", "text/html"],
-    ["/app.js", "text/javascript"],
-    ["/styles.css", "text/css"],
-    ["/enhancements.css", "text/css"],
+    [html.match(/src="([^\"]+\.js)"/)?.[1], "text/javascript"],
+    [html.match(/href="([^\"]+\.css)"/)?.[1], "text/css"],
   ]) {
+    assert.ok(path, "Vite build should reference a " + type + " asset");
     const asset = await request(path);
     assert.equal(asset.status, 200);
     assert.ok(asset.headers.get("content-type").startsWith(type));
+    assert.equal(asset.headers.get("x-powered-by"), null);
     assert.ok((await asset.text()).length > 0);
   }
   const post = (path, body, cookie = "") =>
